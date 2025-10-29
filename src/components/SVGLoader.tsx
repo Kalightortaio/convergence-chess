@@ -16,7 +16,7 @@ function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", style
     function LoadSVG() {
         switch (type) {
             case 'symbol':
-                switch(name) {
+                switch (name) {
                     case 'pawn':
                         return (
                             <G>
