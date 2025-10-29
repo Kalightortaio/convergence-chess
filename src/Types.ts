@@ -2,11 +2,14 @@ type PieceType = 'pawn' | 'scout' | 'rook' | 'knight' | 'bishop' | 'queen' | 'ki
 type CellColor = 'white' | 'black';
 
 interface Piece {
-    type: PieceType;
-    player: number;
+    type: PieceType,
+    hasMoved: boolean,
+    player: number,
 }
 
 export interface CellStateProps {
-    index: { x: number; y: number };
-    piece: Piece | null;
+    index: { x: number; y: number },
+    piece: Piece | null,
+    selected: boolean,
+    shaded: boolean,
 }
