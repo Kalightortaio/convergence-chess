@@ -7,9 +7,11 @@ interface SVGLoaderProps {
     rightColor?: string,
     leftColor?: string,
     style?: object | object[],
+    scale?: number,
+    rotate?: number,
 }
 
-function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", style }: SVGLoaderProps) {
+function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", scale = 1, rotate = 0, style }: SVGLoaderProps) {
     const zoom = useZoom();
     const viewBox = "0 0 50 50";
 
@@ -17,6 +19,18 @@ function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", style
         switch (type) {
             case 'symbol':
                 switch (name) {
+                    case 'checked':
+                        return (
+                            <G>
+                                <Defs>
+                                    <LinearGradient id="a" x1={6} y1={3} x2={43} y2={46} gradientUnits="userSpaceOnUse">
+                                        <Stop offset={0} stopColor={leftColor} />
+                                        <Stop offset={1} stopColor={rightColor} />
+                                    </LinearGradient>
+                                </Defs>
+                                <Path fill="url(#a)" fillRule="nonzero" stroke="#000" strokeLinejoin="round" strokeWidth={4} d="M6 8.26 25 3l18 5.26v10.77A26.3 26.3 0 0 1 24 46 26.3 26.3 0 0 1 6 19.03z"  />
+                            </G>
+                        );
                     case 'pawn':
                         return (
                             <G>
@@ -151,6 +165,27 @@ function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", style
                                     </G>
                             </G>
                         );
+                    case 'dead_king':
+                        return (
+                            <G>
+                                <Defs>
+                                    <LinearGradient id="a" x1={-825.75} x2={-704.44} y1={2712.8} y2={2712.8} gradientTransform="matrix(.265 0 0 .254 227.43 -666.55)" gradientUnits="userSpaceOnUse">
+                                        <Stop offset={0} stopColor="dimgrey" />
+                                        <Stop offset={1} stopColor="black" />
+                                    </LinearGradient>
+                                    <LinearGradient id="b" x1={-215.24} x2={-184.86} y1={731.78} y2={731.78} gradientTransform="translate(225.05 -690.53)" gradientUnits="userSpaceOnUse">
+                                        <Stop offset={0} stopColor="dimgrey" />
+                                        <Stop offset={1} stopColor="black" />
+                                    </LinearGradient>
+                                    </Defs>
+                                    <Path fill="url(#a)" stroke="#000" strokeLinejoin="round" strokeWidth={1.6} d="M25 3.87c-1.8.1-3.22 1.23-3.22 2.62 0 .56.24 1.64.7 2.1H16.7v5.1H23l-2.6 2.83 2.66 2.17c-5.58.36-12.02 1.64-13.15 4-1.27 2.63 6.22 15.6 6.22 15.6h17.73s7.48-12.97 6.21-15.6c-1.13-2.36-7.6-3.64-13.18-4l2.71-2.17-2.6-2.83h6.3v-5.1h-5.77c.45-.46.7-1.54.7-2.1 0-1.39-1.43-2.52-3.23-2.62z"/>
+                                    <Path d="M31.29 38.28h2.57s7.48-12.43 6.22-15.07C35.94 19.4 26.9 18.7 26.9 18.7c11.05 2.82 12.61 5.03 4.39 19.6" opacity={0.1}/>
+                                    <Path fill="url(#b)" stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M13.24 38.29a2.67 2.67 0 0 0-2.62 2.68v3.23h28.76v-3.23a2.67 2.67 0 0 0-2.62-2.68H25z"/>
+                                    <G fill="#fff">
+                                        <Path d="M15.28 31.14s-3.07-6.56-2.66-8.1c.4-1.53 5.98-2.73 5.98-2.73-6.48 2.71-4.78 4.56-3.32 10.83M17.52 12.88V9.36h1.53c-.89 0-1.53 2.14-1.53 3.52M24.8 4.67s-2.62.92-1.53 3.52c-.18 0-2.14-2.72 1.53-3.52"/>
+                                    </G>
+                            </G>
+                        );
                     default:
                         console.warn(`Unknown name '${name}' for type 'symbol'`);
                         return (
@@ -166,7 +201,7 @@ function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", style
     }
 
     return (
-        <Svg width={`${100 * zoom}%`} height={`${100 * zoom}%`} clipRule="evenodd" fillRule="evenodd" viewBox={viewBox} style={[style, { transform: [{ scale: 1 / zoom }]}]}>
+        <Svg width={`${100 * zoom}%`} height={`${100 * zoom}%`} clipRule="evenodd" fillRule="evenodd" viewBox={viewBox} style={[style, { transform: [{ rotate: `${rotate}deg` }, {scale: scale / zoom }]}]}>
             {LoadSVG()}
         </Svg>
     )

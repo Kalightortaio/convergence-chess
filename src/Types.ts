@@ -1,15 +1,12 @@
-type PieceType = 'pawn' | 'scout' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
-type CellColor = 'white' | 'black';
-
-interface Piece {
-    type: PieceType,
-    hasMoved: boolean,
-    player: number,
-}
+import { Piece } from "./core/pieces/Piece";
 
 export interface CellStateProps {
-    index: { x: number; y: number },
-    piece: Piece | null,
-    selected: boolean,
-    shaded: boolean,
+    index: { x: number; y: number };
+    piece: Pieces;
+    selected: boolean;
+    shaded: boolean;
 }
+
+export type Pieces = (Piece | null);
+export type Cells = (CellStateProps | null);
+export interface Coord { x: number; y: number; };

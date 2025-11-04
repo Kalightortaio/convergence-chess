@@ -1,21 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { CellStateProps } from '../Types'
-import { cellSize, gridSize } from '../Constants';
+import { Cells, CellStateProps, Pieces } from '../Types'
+import { cellSize, gridSize, PAWN_FORWARD } from '../Constants';
 import Zoomable from '../components/Zoomable';
 import Cell from '../components/Cell';
 import { throttle } from 'lodash';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pawn, Scout, Rook, Knight, Bishop, Queen, King, DeadKing } from "../core/pieces";
 
 export default function Game() {
-    const [cells, setCells] = useState<(CellStateProps | null)[][]>(initializeCells());
+    const [board, setBoard] = useState<Cells[][]>(initBoard());
     const [isPanOrPinchActive, setPanOrPinchActive] = useState(false);
     const [lastSelected, setLastSelected] = useState<CellStateProps | null>(null);
+    const [turn, setTurn] = useState<number>(1);
+    const DEBUG_IGNORE_TURNS = true;
 
-    function initializeCells(): (CellStateProps | null)[][] {
-        const initialCells: (CellStateProps | null)[][] = [];
+    function initBoard(): Cells[][] {
+        const initialCells: Cells[][] = [];
         for (let row = 0; row < gridSize; row++) {
-            const currentRow: (CellStateProps | null)[] = [];
+            const currentRow: Cells[] = [];
             for (let col = 0; col < gridSize; col++) {
                 const inCenter = col >= 5 && col <= 12 && row >= 5 && row <= 12;
                 const inHorizontalArm = row >= 5 && row <= 12;
@@ -37,18 +40,37 @@ export default function Game() {
         return initialCells;
     }
 
-    function getStartingPieces(row: number, col: number) {
+    function getStartingPieces(row: number, col: number): Pieces {
         const layouts = {
             front: Array(8).fill('pawn'),
             middle: ['pawn', 'scout', 'knight', 'bishop', 'bishop', 'knight', 'scout', 'pawn'],
             back: ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'],
-        }
+        } as const;
 
         const pickPiece = (index: number, player: number, rank: keyof typeof layouts) => {
             const localIndex = index - 5;
             const order = layouts[rank];
-            const pieceType = order[localIndex % order.length];
-            return { type: pieceType, hasMoved: false, player }
+            const type = order[localIndex % order.length];
+            const position = { x: col, y: row };
+
+            switch (type) {
+                case "pawn":   
+                    return new Pawn(position, player);
+                case "scout":  
+                    return new Scout(position, player);
+                case "rook":   
+                    return new Rook(position, player);
+                case "knight": 
+                    return new Knight(position, player);
+                case "bishop": 
+                    return new Bishop(position, player);
+                case "queen":  
+                    return new Queen(position, player);
+                case "king":   
+                    return new King(position, player);
+                default:       
+                    return null;
+            }
         }
 
         // Player 1 (Bottom)
@@ -68,76 +90,130 @@ export default function Game() {
         if (col === 16) return pickPiece(row, 4, 'middle');
         if (col === 17) return pickPiece(row, 4, 'back');
         // Debug (Middle)
-        if ((row === 8) && (col === 9)) return { type: "rook", hasMoved: false, player: 2 };
-        if ((row === 9) && (col === 9)) return { type: "rook", hasMoved: false, player: 1 };
-        if ((row === 10) && (col === 10)) return { type: "rook", hasMoved: false, player: 4 };
+        if (row === 6 && col === 6) return new Pawn({ x: col, y: row }, 1);
+        if (row === 7 && col === 7) return new Pawn({ x: col, y: row }, 2);
+        if (row === 8 && col === 8) return new Pawn({ x: col, y: row }, 3);
+        if (row === 9 && col === 9) return new Pawn({ x: col, y: row }, 4);
 
         return null;
     }
 
+    useEffect(() => {
+        const updatedBoard = board.map(row =>
+            row.map(cell => {
+            if (!cell) return null;
+
+            const clearedCell = { ...cell, shaded: false, selected: false };
+
+            const piece = clearedCell.piece;
+            if (piece?.type === "pawn" && piece.player === turn) {
+                const pawn = piece as Pawn;
+                if (pawn.isEnPassantTarget) pawn.isEnPassantTarget = false;
+            }
+
+            return clearedCell;
+            })
+        );
+
+        setBoard(updatedBoard);
+    }, [turn]);
+
     const onCellPress = throttle((row: number, col: number) => {
         if (!isPanOrPinchActive) {
-            let localCells = [...cells];
-            const cell = localCells[row][col];
+            const cell = board[row]?.[col];
             if (!cell) return;
-            // Handle currently selected cell & shaded cells.
-            if (lastSelected) {
-                const isSameCell = lastSelected.index.x === cell.index.x && lastSelected.index.y === cell.index.y;
-                if (isSameCell) {
-                    lastSelected.selected = false;
-                    drawMoves(lastSelected, false);
-                    setLastSelected(null);
-                    return;
-                } 
-                const lastPlayer = lastSelected.piece?.player;
-                // Handle interacting with other pieces.
-                if (cell?.piece) {
-                    const sameTeam = cell.piece.player === lastPlayer;
-                    // Capture enemy piece if shaded.
-                    if (!sameTeam) {
-                        if (cell.shaded) {
-                            drawMoves(lastSelected, false);
-                            doMove(cell);
-                        }
-                        return;
-                    } else {
-                        // Switch selection with a different one of your pieces.
-                        lastSelected.selected = false;
-                        drawMoves(lastSelected, false);
-
-                        cell.selected = true;
-                        setLastSelected(cell);
-                        drawMoves(cell, true);
-                        return;
-                    }
-                } else {
-                    // Move to empty cell only if shaded.
-                    if (cell.shaded) {
-                        drawMoves(lastSelected, false);
-                        doMove(cell);
-                    }
-                    return;
+            // Enforce turn order.
+            if (!DEBUG_IGNORE_TURNS) {
+                if (!lastSelected) {
+                    if (!cell.piece) return;
+                    if (cell.piece.player !== turn) return;
                 }
             }
-            // No lastSelected currently, this sets one.
-            if (cell.piece) {
-                cell.selected = !cell.selected;
-                if (cell.selected) {
-                    setLastSelected(cell);
-                    drawMoves(cell, true);
+            // If nothing is selected yet.
+            if (!lastSelected) {
+                if (!cell.piece) return;      
+                if (!DEBUG_IGNORE_TURNS && cell.piece.player !== turn) return;
+                cell.selected = true;
+                setLastSelected(cell);
+                drawMoves(cell, true);
+                return;
+            }
+            // Deselecting the currently selected cell.
+            if (lastSelected.index.x === cell.index.x && lastSelected.index.y === cell.index.y) {
+                lastSelected.selected = false;
+                drawMoves(lastSelected, false);
+                setLastSelected(null);
+                return;
+            }
+            // Switching or moving from the currently selected cell.
+            if (cell.piece && cell.piece.player === lastSelected.piece?.player) {
+                lastSelected.selected = false;
+                drawMoves(lastSelected, false);
+                cell.selected = true;
+                setLastSelected(cell);
+                drawMoves(cell, true);
+                return;
+            }
+            // Moving to a shaded cell.
+            if (cell.shaded) {
+                drawMoves(lastSelected, false);
+                doMove(cell);
+                if (!DEBUG_IGNORE_TURNS) {
+                    setTurn(prev => (prev % 4) + 1);
                 }
+                return;
             }
         }
     }, 0);
 
     function doMove(cell: CellStateProps) {
-        if (!lastSelected) return;
-        if (!lastSelected.piece) return;
+        if (!lastSelected?.piece) return;
+
+        const movingPiece = lastSelected.piece;
+        const from = lastSelected.index;
+        const to = cell.index;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+
+        // En passant capture
+        if (movingPiece.type === "pawn") {
+            const pawn = movingPiece as Pawn;
+
+            if (Math.abs(dx) === 1 && Math.abs(dy) === 1 && !cell.piece) {
+                const [fx, fy] = PAWN_FORWARD[pawn.player];
+                const capturedX = to.x - fx;
+                const capturedY = to.y - fy;
+                const capturedCell = board[capturedY]?.[capturedX];
+                const capturedPiece = capturedCell?.piece;
+                if (capturedPiece?.type === "pawn" && (capturedPiece as Pawn).isEnPassantTarget) {
+                    capturedCell!.piece = null;
+                }
+            }
+        }
+
+        if (movingPiece.type === "pawn") {
+            const pawn = movingPiece as Pawn;
+
+            if (!pawn.hasMoved) {
+                const [fx, fy] = PAWN_FORWARD[pawn.player];
+                const isDoubleStep = dx === 2 * fx && dy === 2 * fy;
+                if (isDoubleStep) {
+                    pawn.isEnPassantTarget = true;
+                }
+            }
+        }
+
+        if ("hasMoved" in movingPiece && !movingPiece.hasMoved) {
+            (movingPiece as { hasMoved: boolean }).hasMoved = true;
+        }
+
+        movingPiece.index = { ...cell.index };
         if (cell.piece) doAttack(cell);
-        lastSelected.piece.hasMoved = true;
-        cell.piece = lastSelected?.piece;
+        cell.piece = movingPiece;
         lastSelected.piece = null;
         setLastSelected(null);
+
+        setBoard([...board.map(row => [...row])]);
     }
 
     function doAttack(cell: CellStateProps) {
@@ -147,180 +223,25 @@ export default function Game() {
     }
 
     function drawMoves(cell: CellStateProps, shouldShade: boolean) {
-        let localCells = [...cells];
+        const localCells = board.map(row => [...row]);
         cell.shaded = shouldShade;
         if (!cell?.piece) return;
-        switch (cell?.piece.type) {
-            case 'pawn': {
-                const { x, y } = cell.index;
-                const player = cell.piece.player;
-                const blocked: Record<number, number[]> = {
-                    1: [0, 1],
-                    2: [-1, 0],
-                    3: [0, -1],
-                    4: [1, 0],
-                };
-                const allDirections = [
-                    [0, 1], [0, -1],
-                    [1, 0], [-1, 0],
-                ];
-                const moves = allDirections.filter(
-                    ([dx, dy]) => !(dx === blocked[player][0] && dy === blocked[player][1])
-                );
-                for (const [dx, dy] of moves) {
-                    const forward1 = localCells[y + dy]?.[x + dx];
-                    if (forward1 && !forward1.piece) forward1.shaded = shouldShade;
-                    const forward2 = localCells[y + dy * 2]?.[x + dx * 2];
-                    if (!cell.piece.hasMoved && forward1 && !forward1.piece && forward2 && !forward2.piece) {
-                        forward2.shaded = shouldShade;
-                    }
+        const piece = cell.piece;
+        if (piece.type === "dead_king") return;
+        const moves = piece.getRawMoves(localCells);
+        for (const move of moves) {
+            const targetCell = localCells[move.y][move.x];
+            if (!targetCell) continue;
+            if (piece.type === "pawn") {
+                const isForward = targetCell && !targetCell.piece;
+                const attacks = piece.getRawAttacks(localCells);
+                const isAttackTarget = attacks.some(a => a.x === move.x && a.y === move.y);
+                if (isForward || isAttackTarget) {
+                    targetCell.shaded = shouldShade;
                 }
-                const diagonals = [
-                    [1, 1], [1, -1],
-                    [-1, 1], [-1, -1],
-                ];
-                for (const [dx, dy] of diagonals) {
-                    const target = localCells[y + dy]?.[x + dx];
-                    if (target?.piece && target.piece.player !== player) {
-                        target.shaded = shouldShade;
-                    }
-                }
-                break;
+                continue;
             }
-            case 'scout': {
-                const { x, y } = cell.index;
-                const player = cell.piece.player;
-                const directions = [
-                    [0, 1], [0, -1], [1, 0], [-1, 0],
-                    [1, 1], [1, -1], [-1, 1], [-1, -1],
-                ];
-                for (const [dx, dy] of directions) {
-                    const maxStep = (Math.abs(dx) === 1 && Math.abs(dy) === 1) ? 1 : 2;
-                    for (let step = 1; step <= maxStep; step++) {
-                        const target = localCells[y + dy * step]?.[x + dx * step];
-                        if (!target) break;
-                        if (!target.piece) {
-                            target.shaded = shouldShade;
-                            continue;
-                        }
-                        if (target.piece.player !== player) {
-                            target.shaded = shouldShade;
-                        }
-                        break;
-                    }
-                }
-                break;
-            }
-            case 'rook': {
-                const { x, y } = cell.index;
-                const player = cell.piece.player;
-                const directions = [
-                    [0, 1],
-                    [0, -1],
-                    [1, 0],
-                    [-1, 0],
-                ];
-                for (const [dx, dy] of directions) {
-                    for (let step = 1; ; step++) {
-                        const target = localCells[y + dy * step]?.[x + dx * step];
-                        if (!target) break;
-                        if (!target.piece) {
-                            target.shaded = shouldShade;
-                            continue;
-                        }
-                        if (target.piece.player !== player) {
-                            target.shaded = shouldShade;
-                        }
-                        break;
-                    }
-                }
-                break;
-            }
-            case 'bishop': {
-                const { x, y } = cell.index;
-                const player = cell.piece.player;
-                const directions = [
-                    [1, 1],
-                    [1, -1],
-                    [-1, 1],
-                    [-1, -1],
-                ];
-                for (const [dx, dy] of directions) {
-                    for (let step = 1; ; step++) {
-                        const target = localCells[y + dy * step]?.[x + dx * step];
-                        if (!target) break;
-                        if (!target.piece) {
-                            target.shaded = shouldShade;
-                            continue;
-                        }
-                        if (target.piece.player !== player) {
-                            target.shaded = shouldShade;
-                        }
-                        break;
-                    }
-                }
-                break;
-            }
-            case 'knight': {
-                const { x, y } = cell.index;
-                const player = cell.piece.player;
-                const jumps = [
-                    [1, 2], [2, 1],
-                    [2, -1], [1, -2],
-                    [-1, -2], [-2, -1],
-                    [-2, 1], [-1, 2],
-                ];
-                for (const [dx, dy] of jumps) {
-                    const target = localCells[y + dy]?.[x + dx];
-                    if (!target) continue;
-                    if (!target.piece || target.piece.player !== player) {
-                        target.shaded = shouldShade;
-                    }
-                }
-                break;
-            }
-            case 'king': {
-                const { x, y } = cell.index;
-                const player = cell.piece.player;
-                const directions = [
-                    [0, 1], [0, -1], [1, 0], [-1, 0],
-                    [1, 1], [1, -1], [-1, 1], [-1, -1],
-                ];
-                for (const [dx, dy] of directions) {
-                    const target = localCells[y + dy]?.[x + dx];
-                    if (!target) continue;
-                    if (!target.piece || target.piece.player !== player) {
-                        target.shaded = shouldShade;
-                    }
-                }
-                break;
-            }
-            case 'queen': {
-                const { x, y } = cell.index;
-                const player = cell.piece.player;
-                const directions = [
-                    [0, 1], [0, -1], [1, 0], [-1, 0],
-                    [1, 1], [1, -1], [-1, 1], [-1, -1],
-                ];
-                for (const [dx, dy] of directions) {
-                    for (let step = 1; ; step++) {
-                        const target = localCells[y + dy * step]?.[x + dx * step];
-                        if (!target) break;
-                        if (!target.piece) {
-                            target.shaded = shouldShade;
-                            continue;
-                        }
-                        if (target.piece.player !== player) {
-                            target.shaded = shouldShade;
-                        }
-                        break;
-                    }
-                }
-                break;
-            }
-            default: {
-                console.warn(`Unknown piece '${cell?.piece.type}' for drawMoves()`);
-            }
+            targetCell.shaded = shouldShade;
         }
     }
 
@@ -328,7 +249,7 @@ export default function Game() {
         <View style={styles.gameContainer}>
             <SafeAreaView>
                 <Zoomable style={[styles.gameContainer, styles.zoomContainer]} setPanOrPinchActive={setPanOrPinchActive}>
-                    {cells.map((row, x) => (
+                    {board.map((row, x) => (
                         <View key={`row-${x}`} style={styles.row}>
                             {row.map((cellState, y) =>
                                 cellState ? (<Cell key={`${x}-${y}`} onCellPress={() => onCellPress(x, y)} selectedColor={["maroon","blue","darkgreen","darkgoldenrod"][(lastSelected?.piece?.player ?? 1) - 1]} {...cellState} />) : <View key={`${x}-${y}`} style={styles.emptyCell} />
