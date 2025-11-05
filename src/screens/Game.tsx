@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Cells, CellStateProps, Coord, Pieces } from '../Types'
-import { cellSize, gridSize, PAWN_FORWARD } from '../Constants';
+import { StyleSheet, View, Text, Image } from 'react-native';
+import { Cells, CellStateProps, Coord, Pieces, RootStackParamList } from '../Types'
+import { cellSize, gridSize, PAWN_FORWARD, scaleText } from '../Constants';
 import Zoomable from '../components/Zoomable';
 import Cell from '../components/Cell';
-import { find, throttle } from 'lodash';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pawn, Scout, Rook, Knight, Bishop, Queen, King, DeadKing } from "../core/pieces";
+import { throttle } from 'lodash';
+import { Pawn, Scout, Rook, Knight, Bishop, Queen, King } from "../core/pieces";
+import { StackNavigationProp } from '@react-navigation/stack';
+import { NavigationProvider } from '../components/NavigationProvider';
 
-export default function Game() {
+type GameProps = {
+    navigation: StackNavigationProp<RootStackParamList, 'Game'>;
+};
+
+export default function Game({ navigation }: GameProps) {
     const [turn, setTurn] = useState<number>(1);
     const playerPiecesRef = useRef<Record<number, Pieces[]>>({1:[], 2:[], 3:[], 4:[]});
     const [board, setBoard] = useState<Cells[][]>(() => initBoard());
@@ -365,19 +370,41 @@ export default function Game() {
     }
 
     return (
-        <View style={styles.gameContainer}>
-            <SafeAreaView>
-                <Zoomable style={[styles.gameContainer, styles.zoomContainer]} setPanOrPinchActive={setPanOrPinchActive}>
-                    {board.map((row, x) => (
-                        <View key={`row-${x}`} style={styles.row}>
-                            {row.map((cellState, y) =>
-                                cellState ? (<Cell key={`${x}-${y}`} onCellPress={() => onCellPress(x, y)} selectedColor={["maroon","blue","darkgreen","darkgoldenrod"][(lastSelected?.piece?.player ?? 1) - 1]} {...cellState} />) : <View key={`${x}-${y}`} style={styles.emptyCell} />
-                            )}
-                        </View>
-                    ))}
-                </Zoomable>
-            </SafeAreaView>
-        </View>
+        <NavigationProvider navigation={navigation}>
+            <Zoomable style={[styles.gameContainer, styles.zoomContainer]} setPanOrPinchActive={setPanOrPinchActive}>
+                {board.map((row, x) => (
+                    <View key={`row-${x}`} style={styles.row}>
+                        {row.map((cellState, y) =>
+                            cellState ? (<Cell key={`${x}-${y}`} onCellPress={() => onCellPress(x, y)} selectedColor={["maroon","blue","darkgreen","darkgoldenrod"][(lastSelected?.piece?.player ?? 1) - 1]} {...cellState} />) : <View key={`${x}-${y}`} style={styles.emptyCell} />
+                        )}
+                    </View>
+                ))}
+                <View style={[styles.corner, styles.botRight]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Image style={{ height: cellSize, width: cellSize }} source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}} />
+                        <Text style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS',color: 'maroon' }}>  Player 1</Text>
+                    </View>
+                </View>
+                <View style={[styles.corner, styles.botLeft]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Image style={{ height: cellSize, width: cellSize }} source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}} />
+                        <Text style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS',color: 'blue' }}>  Player 2</Text>
+                    </View>
+                </View>
+                <View style={[styles.corner, styles.topLeft]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Image style={{ height: cellSize, width: cellSize }} source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}} />
+                        <Text style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS',color: 'darkgreen' }}>  Player 3</Text>
+                    </View>
+                </View>
+                <View style={[styles.corner, styles.topRight]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Image style={{ height: cellSize, width: cellSize }} source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}} />
+                        <Text style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS',color: 'darkgoldenrod' }}>  Player 4</Text>
+                    </View>
+                </View>
+            </Zoomable>
+        </NavigationProvider>
     );
 }
 
@@ -401,5 +428,27 @@ const styles = StyleSheet.create({
         width: cellSize,
         height: cellSize,
         backgroundColor: 'transparent',
+    },
+    corner: {
+        position: 'absolute',
+        width: 5 * cellSize,
+        height: 5 * cellSize,
+        padding: cellSize / 4,
+    },
+    topLeft: {
+        top: 0, 
+        left: 0,
+    },
+    topRight: {
+        top: 0, 
+        right: 0,
+    },
+    botLeft: {
+        bottom: 0, 
+        left: 0,
+    },
+    botRight: {
+        bottom: 0, 
+        right: 0,
     },
 });

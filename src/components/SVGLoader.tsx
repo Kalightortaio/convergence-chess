@@ -11,12 +11,72 @@ interface SVGLoaderProps {
     rotate?: number,
 }
 
-function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", scale = 1, rotate = 0, style }: SVGLoaderProps) {
+export default function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", scale = 1, rotate = 0, style }: SVGLoaderProps) {
     const zoom = useZoom();
-    const viewBox = "0 0 50 50";
+
+    function loadViewBox() { 
+        switch (type) {
+            case 'ui':
+                switch (name) {
+                    case 'board':
+                        return "0 0 24 24";
+                    case 'profile':
+                        return "0 0 512 512";
+                    case 'cap':
+                        return "0 0 32 32";
+                    default:
+                        console.warn(`Unknown name '${name}' for type 'ui'`);
+                }
+            case 'symbol':
+                switch (name) {
+                    case 'checked':
+                        return "0 0 48 48";
+                    case 'pawn':
+                    case 'scout':
+                    case 'rook':
+                    case 'knight':
+                    case 'king':
+                    case 'bishop':
+                    case 'queen':
+                        return "0 0 50 50";
+                    default:
+                        console.warn(`Unknown name '${name}' for type 'symbol'`);
+                }
+            default:
+                console.warn(`Unknown SVG type '${type}'`);
+        }
+    }
 
     function LoadSVG() {
         switch (type) {
+            case 'ui':
+                switch (name) {
+                    case 'board':
+                        return (
+                            <G>
+                                <Path fill="#fff" d="M21 2H3a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1zm-1 6h-4v4h4v4h-4v4h-4v-4H8v4H4v-4h4v-4H4V8h4V4h4v4h4V4h4v4z" />
+                                <Path fill="#fff" d="M8 8h4v4H8zm4 4h4v4h-4z" />
+                            </G>
+                        );
+                    case 'profile':
+                        return (
+                            <G>
+                                <Path fill="#fff" d="M332.64,64.58C313.18,43.57,286,32,256,32c-30.16,0-57.43,11.5-76.8,32.38-19.58,21.11-29.12,49.8-26.88,80.78C156.76,206.28,203.27,256,256,256s99.16-49.71,103.67-110.82C361.94,114.48,352.34,85.85,332.64,64.58Z" />
+                                <Path fill="#fff" d="M432,480H80A31,31,0,0,1,55.8,468.87c-6.5-7.77-9.12-18.38-7.18-29.11C57.06,392.94,83.4,353.61,124.8,326c36.78-24.51,83.37-38,131.2-38s94.42,13.5,131.2,38c41.4,27.6,67.74,66.93,76.18,113.75,1.94,10.73-.68,21.34-7.18,29.11A31,31,0,0,1,432,480Z" />
+                            </G>
+                        );
+                    case 'cap':
+                        return (
+                            <G>
+                                <Path fill="#fff" d="M30,22v3c0,0.552-0.448,1-1,1h-1c-0.552,0-1-0.448-1-1v-3c0-0.552,0.448-1,1-1v-7.539l-11.198-0.896 C16.621,12.822,16.337,13,16,13c-0.552,0-1-0.448-1-1c0-0.552,0.448-1,1-1c0.396,0,0.732,0.235,0.894,0.57l11.186,0.895 c0.516,0.041,0.92,0.479,0.92,0.997V21C29.552,21,30,21.448,30,22z M16,19.725c-0.547,0-1.094-0.111-1.603-0.334L8,16.592v2.227 c0,1.136,0.642,2.175,1.658,2.683l0,0C11.655,22.501,13.827,23,16,23s4.345-0.499,6.341-1.497l0,0C23.358,20.995,24,19.956,24,18.82 v-2.227l-6.397,2.799C17.094,19.614,16.547,19.725,16,19.725z M29.906,11.084L17.202,5.526C16.819,5.358,16.41,5.275,16,5.275 c-0.41,0-0.819,0.084-1.202,0.252L2.094,11.084c-0.799,0.35-0.799,1.483,0,1.832l12.703,5.559c0.765,0.334,1.641,0.334,2.405,0 l9.416-4.121l-9.438-0.755C16.843,13.858,16.434,14,16,14c-1.103,0-2-0.897-2-2c0-1.103,0.897-2,2-2 c0.552,0,1.062,0.224,1.431,0.609l10.729,0.858c0.842,0.067,1.525,0.666,1.751,1.445C30.704,12.561,30.703,11.433,29.906,11.084z"/>
+                            </G>
+                        );
+                    default:
+                        console.warn(`Unknown name '${name}' for type 'ui'`);
+                        return (
+                            <Path />
+                        );
+                }
             case 'symbol':
                 switch (name) {
                     case 'checked':
@@ -201,10 +261,8 @@ function SVGLoader({ type, name, rightColor = "grey", leftColor = "white", scale
     }
 
     return (
-        <Svg width={`${100 * zoom}%`} height={`${100 * zoom}%`} clipRule="evenodd" fillRule="evenodd" viewBox={viewBox} style={[style, { transform: [{ rotate: `${rotate}deg` }, {scale: scale / zoom }]}]}>
+        <Svg width={`${100 * zoom}%`} height={`${100 * zoom}%`} clipRule="evenodd" fillRule="evenodd" viewBox={loadViewBox()} style={[style, { transform: [{ rotate: `${rotate}deg` }, {scale: scale / zoom }]}]}>
             {LoadSVG()}
         </Svg>
     )
 };
-
-export default SVGLoader;

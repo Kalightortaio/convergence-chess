@@ -10,3 +10,9 @@ export interface CellStateProps {
 export type Pieces = (Piece | null);
 export type Cells = (CellStateProps | null);
 export interface Coord { x: number; y: number; };
+
+export type RootStackParamList = {
+    Game: undefined;
+    Profile: undefined;
+    Learn: undefined;
+};
