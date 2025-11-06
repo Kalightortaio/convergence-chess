@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Image } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Cells, CellStateProps, Coord, Pieces, RootStackParamList } from '../Types'
-import { cellSize, gridSize, PAWN_FORWARD, scaleText } from '../Constants';
+import { cellSize, gridSize, PAWN_FORWARD } from '../Constants';
 import Zoomable from '../components/Zoomable';
 import Cell from '../components/Cell';
 import { throttle } from 'lodash';
 import { Pawn, Scout, Rook, Knight, Bishop, Queen, King } from "../core/pieces";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { NavigationProvider } from '../components/NavigationProvider';
+import PlayerUI from '../components/PlayerUI';
 
 type GameProps = {
     navigation: StackNavigationProp<RootStackParamList, 'Game'>;
@@ -379,30 +380,7 @@ export default function Game({ navigation }: GameProps) {
                         )}
                     </View>
                 ))}
-                <View style={[styles.corner, styles.botRight]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Image style={{ height: cellSize, width: cellSize }} source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}} />
-                        <Text style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS',color: 'maroon' }}>  Player 1</Text>
-                    </View>
-                </View>
-                <View style={[styles.corner, styles.botLeft]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Image style={{ height: cellSize, width: cellSize }} source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}} />
-                        <Text style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS',color: 'blue' }}>  Player 2</Text>
-                    </View>
-                </View>
-                <View style={[styles.corner, styles.topLeft]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Image style={{ height: cellSize, width: cellSize }} source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}} />
-                        <Text style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS',color: 'darkgreen' }}>  Player 3</Text>
-                    </View>
-                </View>
-                <View style={[styles.corner, styles.topRight]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Image style={{ height: cellSize, width: cellSize }} source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}} />
-                        <Text style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS',color: 'darkgoldenrod' }}>  Player 4</Text>
-                    </View>
-                </View>
+                <PlayerUI />
             </Zoomable>
         </NavigationProvider>
     );
@@ -428,27 +406,5 @@ const styles = StyleSheet.create({
         width: cellSize,
         height: cellSize,
         backgroundColor: 'transparent',
-    },
-    corner: {
-        position: 'absolute',
-        width: 5 * cellSize,
-        height: 5 * cellSize,
-        padding: cellSize / 4,
-    },
-    topLeft: {
-        top: 0, 
-        left: 0,
-    },
-    topRight: {
-        top: 0, 
-        right: 0,
-    },
-    botLeft: {
-        bottom: 0, 
-        left: 0,
-    },
-    botRight: {
-        bottom: 0, 
-        right: 0,
     },
 });

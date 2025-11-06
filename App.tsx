@@ -2,7 +2,7 @@ import { useFonts } from "expo-font";
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from "@react-navigation/native";
 import { RootStackParamList } from "./src/Types";
@@ -24,16 +24,18 @@ export default function App() {
 
 	return (
 		<GestureHandlerRootView>
-			<StatusBar hidden />
-        	<SafeAreaView style={styles.appContainer}>
-				<NavigationContainer>
-					<Tab.Navigator initialRouteName="Game" tabBar={() => <Navbar />}>
-						<Tab.Screen name="Game" component={Game} options={{ headerShown: false }} />
-						<Tab.Screen name="Profile" component={Profile} options={{ headerShown: false }} />
-						<Tab.Screen name="Learn" component={Learn} options={{ headerShown: false }} />
-					</Tab.Navigator>
-				</NavigationContainer>
-			</SafeAreaView>
+			<SafeAreaProvider>
+				<StatusBar hidden />
+				<SafeAreaView style={styles.appContainer}>
+					<NavigationContainer>
+						<Tab.Navigator initialRouteName="Game" tabBar={(navigationProps) => <Navbar {...navigationProps} />}>
+							<Tab.Screen name="Game" component={Game} options={{ headerShown: false }} />
+							<Tab.Screen name="Profile" component={Profile} options={{ headerShown: false }} />
+							<Tab.Screen name="Learn" component={Learn} options={{ headerShown: false }} />
+						</Tab.Navigator>
+					</NavigationContainer>
+				</SafeAreaView>
+			</SafeAreaProvider>
 		</GestureHandlerRootView>
 	);
 }
