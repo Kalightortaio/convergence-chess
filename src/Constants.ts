@@ -1,4 +1,5 @@
 import { Dimensions } from 'react-native';
+import { PieceType } from './core/pieces/Piece';
 
 export const gridSize = 18;
 export const screenWidth = Dimensions.get('window').width;
@@ -27,3 +28,13 @@ export const PAWN_FORWARD: Record<number, [number, number]> = {
 export const KNIGHT_DIRECTIONS: [number, number][] = [ 
     [1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2],
 ];
+export const PIECE_POINTS: Record<PieceType, number> = {
+  pawn: 1,
+  bishop: 3,
+  rook: 3,
+  knight: 7,
+  scout: 13,
+  queen: 21,
+  king: 30,
+  dead_king: 0,
+};

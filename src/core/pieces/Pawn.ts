@@ -10,7 +10,7 @@ export class Pawn extends Piece {
     getRawMoves(board: Cells[][]): Coord[] {
         const moves: Coord[] = [];
         const { x, y } = this.index;
-        const [fx, fy] = PAWN_FORWARD[this.player];
+        const [fx, fy] = PAWN_FORWARD[this.getPlayer().id];
 
         const step1 = board[y + fy]?.[x + fx];
         if (step1 && !step1.piece) {

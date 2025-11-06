@@ -18,9 +18,9 @@ function Cell({ onCellPress, selectedColor, ...cellStateProps }: CellComponentPr
     const checkedPiece = (pieceType === "king") && (piece as King).checked;
     const deadKing = pieceType === "dead_king" ? 90 : 0;
     const playerColorsLeft = ["red","skyblue","springgreen","gold"];
-    const pieceColorLeft = playerColorsLeft[(cellStateProps.piece?.player ?? 1) - 1];
+    const pieceColorLeft = playerColorsLeft[(cellStateProps.piece?.getPlayer().id ?? 1) - 1];
     const playerColorsRight = ["maroon","blue","darkgreen","darkgoldenrod"];
-    const pieceColorRight = playerColorsRight[(cellStateProps.piece?.player ?? 1) - 1];
+    const pieceColorRight = playerColorsRight[(cellStateProps.piece?.getPlayer().id ?? 1) - 1];
 
     function withOpacity(color: string, opacity: number) {
         const rgbaMap: Record<string, string> = {

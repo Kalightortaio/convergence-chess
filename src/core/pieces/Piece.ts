@@ -1,13 +1,21 @@
 import { Cells, Coord } from "../../Types";
+import { Player } from "../Player";
+
+export type PieceType = 'pawn'|'scout'|'rook'|'knight'|'bishop'|'queen'|'king'|'dead_king';
 
 export abstract class Piece {
     index: { x: number; y: number };
-    player: number;
-    abstract type: 'pawn'|'scout'|'rook'|'knight'|'bishop'|'queen'|'king'|'dead_king';
+    player: Player;
+    abstract type: PieceType;
 
-    constructor(index: { x: number; y: number }, player: number) {
+    constructor(index: { x: number; y: number }, player: Player) {
         this.index = index;
         this.player = player;
+        player.addPiece(this);
+    }
+
+    getPlayer(): Player {
+        return this.player;
     }
 
     abstract getRawMoves(board: Cells[][]): Coord[];

@@ -38,6 +38,7 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                     case 'king':
                     case 'bishop':
                     case 'queen':
+                    case 'dead_king':
                         return "0 0 50 50";
                     default:
                         console.warn(`Unknown name '${name}' for type 'symbol'`);

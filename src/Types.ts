@@ -9,6 +9,7 @@ export interface CellStateProps {
 
 export type Pieces = (Piece | null);
 export type Cells = (CellStateProps | null);
+export type CornerPosition = ('topLeft' | 'topRight' | 'botLeft' | 'botRight');
 export interface Coord { x: number; y: number; };
 
 export type RootStackParamList = {
