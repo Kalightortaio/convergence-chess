@@ -5,6 +5,7 @@ import { Piece } from "./Piece";
 export class Rook extends Piece {
     type: 'rook' = 'rook';
     hasMoved: boolean = false;
+    shouldCastle : boolean = false;
 
     getRawMoves(board: Cells[][]): Coord[] {
         const moves: Coord[] = [];

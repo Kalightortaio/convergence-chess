@@ -3,8 +3,8 @@ import { StyleProp, View, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedReaction, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { boardSize, gridSize } from '../Constants';
 import { ZoomContext } from './ZoomContext';
+import { useDimensions } from "../hooks/useDimensions";
 
 interface ZoomableProps {
     children: ReactNode,
@@ -13,6 +13,7 @@ interface ZoomableProps {
 }
 
 function Zoomable({ children, style, setPanOrPinchActive }: ZoomableProps) {
+    const { boardSize, gridSize } = useDimensions();
     const currentScale = useSharedValue(1);
     const previousScale = useSharedValue(1);
     const offsetX = useSharedValue(0);
