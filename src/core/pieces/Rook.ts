@@ -4,7 +4,7 @@ import { Piece } from "./Piece";
 
 export class Rook extends Piece {
     type: 'rook' = 'rook';
-    note: string = 'Rk ';
+    note: string = 'R';
     hasMoved: boolean = false;
     shouldCastle : boolean = false;
 

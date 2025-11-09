@@ -4,7 +4,7 @@ import { Piece } from "./Piece";
 
 export class Knight extends Piece {
     type: "knight" = "knight";
-    note: string = 'Kn ';
+    note: string = 'N';
     
     getRawMoves(board: Cells[][]): Coord[] {
         const moves: Coord[] = [];

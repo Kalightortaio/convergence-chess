@@ -277,8 +277,8 @@ export default function Game({ navigation }: GameProps) {
         }
         // Log the move
         const columns = 'abcdefghijklmnopqr';
-        const targetNote = targetPiece ? targetPiece.note : '';
-        const moveNotation = `${movingPiece.note}${columns[from.x]}${gridSize - from.y}—${targetNote}${columns[to.x]}${gridSize - to.y}`;
+        const targetNote = targetPiece ? ('x' + targetPiece.note) : '-';
+        const moveNotation = `${movingPiece.note}${columns[from.x]}${gridSize - from.y}${targetNote}${columns[to.x]}${gridSize - to.y}`;
         player.lastMove = moveNotation;
         // Move the piece
         movingPiece.index = { ...cell.index };
@@ -289,7 +289,11 @@ export default function Game({ navigation }: GameProps) {
         if (movingPiece.type === "pawn") {
             const player = movingPiece.getPlayer();
             const { x, y } = movingPiece.index;
-            const sideHit = player.id % 2 ? (x <= 0 || x >= 17) : (y <= 0 || y >= 17);
+            let sideHit = false;
+            if (player.id === 1 && y === 5  && (x < 5 || x > 12)) sideHit = true;
+            if (player.id === 2 && x === 12 && (y < 5 || y > 12)) sideHit = true;
+            if (player.id === 3 && y === 12 && (x < 5 || x > 12)) sideHit = true;
+            if (player.id === 4 && x === 5  && (y < 5 || y > 12)) sideHit = true;
             const backlineHit: Record<number, () => boolean> = {1: () => y <= 0, 2: () => x >= 17, 3: () => y >= 17, 4: () => x <= 0};
             if (backlineHit[player.id]()) cell.piece = new Queen({ x, y }, player); // Promote to queen for now, implement choice later.
             if (sideHit) cell.piece = new Scout({ x, y }, player);
