@@ -3,6 +3,7 @@ import SVGLoader from "./SVGLoader";
 import { Player } from "../core/Player";
 import { useDimensions } from "../hooks/useDimensions";
 import { useMemo } from "react";
+import { PIECE_POINTS } from "../Constants";
 
 interface PlayerUIProps {
   players: Player[];
@@ -49,8 +50,8 @@ export default function PlayerUI({ players, viewRotation = 0, setViewRotation }:
             flexDirection: "row",
             justifyContent: "flex-start",
             width: '100%',
-            height: Math.floor(cellSize / 2),
             alignItems: 'center',
+            top: -(cellSize / 8),
         },
         image: {
             height: cellSize,
@@ -106,6 +107,9 @@ export default function PlayerUI({ players, viewRotation = 0, setViewRotation }:
                         </View>
                         <View style={hookStyles.scoreRow}>
                             <Text style={hookStyles.subtitleText} numberOfLines={1} ellipsizeMode="clip">Score: {player.score}</Text>
+                        </View>
+                        <View style={hookStyles.scoreRow}>
+                            <Text style={hookStyles.subtitleText} numberOfLines={1} ellipsizeMode="clip">Move: {player.lastMove}</Text>
                         </View>
                     </View>
                 </TouchableHighlight>

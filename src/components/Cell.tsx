@@ -5,18 +5,21 @@ import { CellStateProps } from "../Types";
 import { King } from "../core/pieces/King";
 import { useDimensions } from "../hooks/useDimensions";
 import { transform } from "lodash";
+import { Player } from "../core/Player";
 
 interface CellComponentProps extends CellStateProps {
     onCellPress: () => void,
-    selectedColor?: string,
+    player?: Player,
     viewRotation?: number,
 }
 
-function Cell({ onCellPress, selectedColor, viewRotation = 0, ...cellStateProps }: CellComponentProps) {
+function Cell({ onCellPress, player, viewRotation = 0, ...cellStateProps }: CellComponentProps) {
     const { index, shaded, piece } = cellStateProps;
+    const selectedColor = player?.rightColor;
     const whiteCell = (index.x + index.y) % 2 === 0;
     const pieceType = piece?.type;
     const checkedPiece = (pieceType === "king") && (piece as King).checked;
+    const onlyChoice = piece?.onlyChoice;
     const deadKing = ((pieceType === "dead_king") ? 90 : 0) + viewRotation;
 
     const rightColor = piece?.getPlayer().rightColor;
@@ -47,12 +50,17 @@ function Cell({ onCellPress, selectedColor, viewRotation = 0, ...cellStateProps 
     return (
         <TouchableWithoutFeedback onPress={() => onCellPress()}>
             <View style={[hookStyles.cell, whiteCell ? styles.whiteCell : styles.blackCell, transform({ rotate: `${viewRotation}deg` })]}>
-                {shaded && selectedColor && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(selectedColor, 0.4) }]} />)}
+                {shaded && selectedColor && !checkedPiece && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(selectedColor, 0.4) }]} />)}
                 {checkedPiece && rightColor && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(rightColor, 0.8) }]} />)}
                 {pieceType && <SVGLoader style={{ zIndex: 1 }} type="symbol" name={pieceType} rightColor={rightColor} leftColor={leftColor} rotate={deadKing}/>}
-                {checkedPiece && rightColor && <View style={styles.svgContainer}>
-                    <SVGLoader type="symbol" name="checked" rightColor={rightColor} leftColor={leftColor} />
-                </View>}
+                <View style={[StyleSheet.absoluteFill, { transform: [{ rotate: `${viewRotation}deg` }] }, styles.svgContainer]}>
+                    {onlyChoice && <View style={styles.onlyChoiceSVG}>
+                        <SVGLoader type="symbol" name="alarm" rightColor={rightColor} leftColor={leftColor}/>
+                    </View>}
+                    {checkedPiece && rightColor && <View style={styles.checkedSVG}>
+                        <SVGLoader type="symbol" name="checked" rightColor={rightColor} leftColor={leftColor}/>
+                    </View>}
+                </View>
             </View>
         </TouchableWithoutFeedback>
     )
@@ -68,13 +76,22 @@ const styles = StyleSheet.create({
         backgroundColor: '#b59669ff'
     },
     svgContainer: {
-        position: 'absolute',
-        top: '40%',
-        left: '40%',
-        right: 0,
-        bottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 2,
+    },
+    checkedSVG: {
+        position: 'absolute',
+        top: 12,
+        left: 17,
+        right: 1,
+        bottom: 0,
+    },
+    onlyChoiceSVG: {
+        position: 'absolute',
+        top: 0,
+        left: 16,
+        right: -16,
+        bottom: 16,
     }
 });

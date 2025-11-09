@@ -1,7 +1,7 @@
 import { Piece } from "./core/pieces/Piece";
 
 export interface CellStateProps {
-    index: { x: number; y: number };
+    index: Coord;
     piece: Pieces;
     selected: boolean;
     shaded: boolean;

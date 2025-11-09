@@ -34,11 +34,10 @@ export default function Game({ navigation }: GameProps) {
     const [board, setBoard] = useState<Cells[][]>(() => initBoard());
     const [isPanOrPinchActive, setPanOrPinchActive] = useState(false);
     const [lastSelected, setLastSelected] = useState<CellStateProps | null>(null);
-    const DEBUG_IGNORE_TURNS = true; // It would cool if git could skip committing this line every time I toggle it. Alas, it cannot.
-    const DEBUG_LOCAL_MULTI = true; // Allow multiple players on the same device for testing. Will eventually be a lobby feature.
+    const [viewRotation, setViewRotation] = useState(0);
     const DEBUG_FROZEN_ARMY = true; // When your checkmated, you lose control of your pieces but they remain on the board. Will eventually be a lobby feature.
-    const currentPlayer = players.find(p => p.id === turn);
-    const [viewRotation, setViewRotation] = useState(0)
+    const DEBUG_IGNORE_TURNS = true;
+    const currentPlayer = DEBUG_IGNORE_TURNS ? lastSelected?.piece?.getPlayer() : players.find(p => p.id === turn);
 
     function initBoard(): Cells[][] {
         const initialCells: Cells[][] = [];
@@ -74,22 +73,14 @@ export default function Game({ navigation }: GameProps) {
             const position = { x: col, y: row };
 
             switch (type) {
-                case "pawn":   
-                    return new Pawn(position, player);
-                case "scout":  
-                    return new Scout(position, player);
-                case "rook":   
-                    return new Rook(position, player);
-                case "knight": 
-                    return new Knight(position, player);
-                case "bishop": 
-                    return new Bishop(position, player);
-                case "queen":  
-                    return new Queen(position, player);
-                case "king":   
-                    return new King(position, player);
-                default:       
-                    return null;
+                case "pawn":   return new Pawn(position, player);
+                case "scout":  return new Scout(position, player);
+                case "rook":   return new Rook(position, player);
+                case "knight": return new Knight(position, player);
+                case "bishop": return new Bishop(position, player);
+                case "queen":  return new Queen(position, player);
+                case "king":   return new King(position, player);
+                default:       return null;
             }
         }
 
@@ -149,6 +140,7 @@ export default function Game({ navigation }: GameProps) {
                 if (!piece || !player) return;
                 if (!DEBUG_IGNORE_TURNS && player.id !== turn) return;
                 if (DEBUG_FROZEN_ARMY && player.isDefeat) return;
+                if (player.getPieces().some(p => p.onlyChoice) && !piece.onlyChoice) return;
                 cell.selected = true;
                 setLastSelected(cell);
                 drawMoves(cell, true);
@@ -202,19 +194,21 @@ export default function Game({ navigation }: GameProps) {
         const to = cell.index;
         const dx = to.x - from.x;
         const dy = to.y - from.y;
-        // En passant capture
+        // En passant captures
         if (movingPiece.type === "pawn") {
             if (Math.abs(dx) === 1 && Math.abs(dy) === 1 && !cell.piece) {
-                const [fx, fy] = PAWN_FORWARD[player.id];
-                const capturedX = to.x - fx;
-                const capturedY = to.y - fy;
-                const capturedCell = board[capturedY]?.[capturedX];
-                const capturedPiece = capturedCell?.piece;
-                if (capturedPiece?.type === "pawn" && (capturedPiece as Pawn).isEnPassantTarget) {
-                    capturedCell!.piece = null;
-                    capturedPiece.getPlayer().removePiece(capturedPiece);
-                    player.addCapturedPiece(capturedPiece.type);
-                    setPlayers([...players]);
+                const cand1 = board[from.y]?.[to.x];
+                const cand2 = board[to.y]?.[from.x];
+                const candidates = [cand1, cand2];
+                for (const cand of candidates) {
+                    const epPawn = cand?.piece as Pawn | undefined;
+                    if (epPawn && epPawn.type === "pawn" && epPawn.getPlayer() !== player && epPawn.isEnPassantTarget && epPawn.enPassantSquare && epPawn.enPassantSquare.x === to.x && epPawn.enPassantSquare.y === to.y) {
+                        cand!.piece = null;
+                        epPawn.getPlayer().removePiece(epPawn);
+                        player.addCapturedPiece(epPawn.type);
+                        setPlayers([...players]);
+                        break;
+                    }
                 }
             }
         }
@@ -226,6 +220,9 @@ export default function Game({ navigation }: GameProps) {
                 const isDoubleStep = dx === 2 * fx && dy === 2 * fy;
                 if (isDoubleStep) {
                     pawn.isEnPassantTarget = true;
+                    pawn.enPassantSquare = { x: from.x + fx, y: from.y + fy };
+                } else {
+                    pawn.enPassantSquare = null;
                 }
             }
         }
@@ -241,35 +238,48 @@ export default function Game({ navigation }: GameProps) {
             setPlayers([...players]);
         }
         // Castling move for king
-        if (movingPiece.type === "king" && Math.abs(to.x - from.x) === 2 || Math.abs(to.y - from.y) === 2) {
+        if (movingPiece.type === "king" && (Math.abs(to.x - from.x) === 2 || Math.abs(to.y - from.y) === 2)) {
+            const [fx, fy] = [Math.sign(to.x - from.x), Math.sign(to.y - from.y)];
             const rooks = player.getPieces().filter(p => p?.type === "rook" && !(p as Rook).hasMoved);
-            for (const rook of rooks) {
-                if (player.id % 2 && rook.index.y === to.y) {
-                    const step = Math.sign(rook.index.x - to.x)
-                    const newX = to.x - step
-                    const targetCell = board[to.y]?.[newX]
-                    const rookCell = board[rook.index.y]?.[rook.index.x]
-                     if (!targetCell || !rookCell) continue
-                    targetCell.piece = rook
-                    rookCell.piece = null
-                    rook.index = { x: newX, y: to.y }
-                } else if (!(player.id % 2) && rook.index.x === to.x) {
-                    const step = Math.sign(rook.index.y - to.y)
-                    const newY = to.y - step
-                    const targetCell = board[newY]?.[to.x]
-                    const rookCell = board[rook.index.y]?.[rook.index.x]
-                    if (!targetCell || !rookCell) continue
-                    targetCell.piece = rook
-                    rookCell.piece = null
-                    rook.index = { x: to.x, y: newY }
-                }
-                (rook as Rook).hasMoved = true
+            let rook: Rook | undefined;
+            if (fx !== 0) {
+                rook = rooks.find(r => r.index.y === to.y && Math.sign(r.index.x - from.x) === fx) as Rook;
+            } else if (fy !== 0) {
+                rook = rooks.find(r => r.index.x === to.x && Math.sign(r.index.y - from.y) === fy) as Rook;
             }
+            if (!rook) return;
+            if (fx !== 0) {
+                const step = Math.sign(rook.index.x - to.x);
+                const newX = to.x - step;
+                const targetCell = board[to.y]?.[newX];
+                const rookCell = board[rook.index.y]?.[rook.index.x];
+                if (targetCell && rookCell) {
+                    targetCell.piece = rook;
+                    rookCell.piece = null;
+                    rook.index = { x: newX, y: to.y };
+                }
+            } else if (fy !== 0) {
+                const step = Math.sign(rook.index.y - to.y);
+                const newY = to.y - step;
+                const targetCell = board[newY]?.[to.x];
+                const rookCell = board[rook.index.y]?.[rook.index.x];
+                if (targetCell && rookCell) {
+                    targetCell.piece = rook;
+                    rookCell.piece = null;
+                    rook.index = { x: to.x, y: newY };
+                }
+            }
+            rook.hasMoved = true
         }
         // Mark pawn/rook/king as moved
         if ("hasMoved" in movingPiece && !movingPiece.hasMoved) {
             (movingPiece as { hasMoved: boolean }).hasMoved = true;
         }
+        // Log the move
+        const columns = 'abcdefghijklmnopqr';
+        const targetNote = targetPiece ? targetPiece.note : '';
+        const moveNotation = `${movingPiece.note}${columns[from.x]}${gridSize - from.y}—${targetNote}${columns[to.x]}${gridSize - to.y}`;
+        player.lastMove = moveNotation;
         // Move the piece
         movingPiece.index = { ...cell.index };
         cell.piece = movingPiece;
@@ -279,8 +289,8 @@ export default function Game({ navigation }: GameProps) {
         if (movingPiece.type === "pawn") {
             const player = movingPiece.getPlayer();
             const { x, y } = movingPiece.index;
-            const sideHit = player.id % 2 ? (x <= 2 || x >= 15) : (y <= 2 || y >= 15);
-            const backlineHit: Record<number, () => boolean> = {1: () => y <= 2, 2: () => x >= 15, 3: () => y >= 15, 4: () => x <= 2};
+            const sideHit = player.id % 2 ? (x <= 0 || x >= 17) : (y <= 0 || y >= 17);
+            const backlineHit: Record<number, () => boolean> = {1: () => y <= 0, 2: () => x >= 17, 3: () => y >= 17, 4: () => x <= 0};
             if (backlineHit[player.id]()) cell.piece = new Queen({ x, y }, player); // Promote to queen for now, implement choice later.
             if (sideHit) cell.piece = new Scout({ x, y }, player);
         }
@@ -330,9 +340,21 @@ export default function Game({ navigation }: GameProps) {
                     targetCell.shaded = shouldShade;
                 }
                 continue;
-            } else {
-                targetCell.shaded = shouldShade;
             }
+            // Special handling for king moves (castling)
+            if (piece.type === "king") {
+                const dx = Math.abs(move.x - piece.index.x);
+                const dy = Math.abs(move.y - piece.index.y);
+                const isCastleMove = dx === 2 || dy === 2;
+                if (isCastleMove) {
+                    targetCell.shaded = shouldShade;
+                    (piece as King).shouldCastle = true;
+                } else {
+                    targetCell.shaded = shouldShade;
+                }
+                continue;
+            }
+            targetCell.shaded = shouldShade;
         }
     }
 
@@ -341,9 +363,11 @@ export default function Game({ navigation }: GameProps) {
             const playerPieces = player.getPieces();
             const king = playerPieces.find(p => p && p.type === "king") as King | undefined;
             if (!king) continue;
-
             const enemies = players.filter(p => p !== player);
             const inCheck = isCellAttackable(board, king.index, enemies);
+            if (!inCheck) {
+                playerPieces.forEach(p => p.onlyChoice = false);
+            }
             king.checked = inCheck;
         }
     }
@@ -353,29 +377,32 @@ export default function Game({ navigation }: GameProps) {
         const king = playerPieces.find(p => p && p.type === "king") as King | undefined;
         if (!king) return;
         if (!king.checked) return;
-
-        const enemies = players.filter(p => p !== player);
+        let hasEscape = false;
+        const enemies = players.filter(p => p !== player || p.isDefeat);
         for (const piece of playerPieces) {
             if (!piece || piece.type === "dead_king") continue;
+            piece.onlyChoice = false;
             const moves = piece.getRawMoves(board);
             for (const move of moves) {
                 const simulated = simulateMove(board, piece, move);
                 const kingAfter = findKing(simulated, player);
                 if (!kingAfter) continue;
-
-                const stillInCheck = isCellAttackable(simulated, kingAfter.index, enemies);
+                const stillInCheck = isCellAttackable(simulated, kingAfter.index, enemies)
                 if (!stillInCheck) {
-                    return;
+                    piece.onlyChoice = true;
+                    hasEscape = true;
                 }
             }
         }
         // Mark king as dead
-        const { x, y } = king.index;
-        const cell = board[y]?.[x];
-        if (cell?.piece) {
-            cell.piece.type = "dead_king";
-            if (DEBUG_FROZEN_ARMY) {
-                player.isDefeat = true;
+        if (!hasEscape) {
+            const { x, y } = king.index
+            const cell = board[y]?.[x]
+            if (cell?.piece) {
+                cell.piece.type = "dead_king"
+                if (DEBUG_FROZEN_ARMY) {
+                    player.isDefeat = true
+                }
             }
         }
         return;
@@ -448,7 +475,7 @@ export default function Game({ navigation }: GameProps) {
                         {board.map((row, x) => (
                             <View key={`row-${x}`} style={styles.row}>
                                 {row.map((cellState, y) =>
-                                    cellState ? (<Cell key={`${x}-${y}`} onCellPress={() => onCellPress(x, y)} selectedColor={lastSelected?.piece?.getPlayer().rightColor} viewRotation={viewRotation} {...cellState} />) : <View key={`${x}-${y}`} style={hookStyles.emptyCell} />
+                                    cellState ? (<Cell key={`${x}-${y}`} onCellPress={() => onCellPress(x, y)} player={currentPlayer} viewRotation={viewRotation} {...cellState} />) : <View key={`${x}-${y}`} style={hookStyles.emptyCell} />
                                 )}
                             </View>
                         ))}

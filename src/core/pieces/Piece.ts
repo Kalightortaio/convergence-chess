@@ -7,6 +7,8 @@ export abstract class Piece {
     index: { x: number; y: number };
     player: Player;
     abstract type: PieceType;
+    abstract note: string;
+    onlyChoice: boolean = false;
 
     constructor(index: { x: number; y: number }, player: Player) {
         this.index = index;

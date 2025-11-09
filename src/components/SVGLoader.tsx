@@ -1,4 +1,4 @@
-import Svg, { Path, Defs, LinearGradient, Stop, G } from "react-native-svg";
+import Svg, { Path, Defs, LinearGradient, Stop, G, Circle } from "react-native-svg";
 import { useZoom } from './ZoomContext'
 
 interface SVGLoaderProps {
@@ -31,6 +31,8 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                 switch (name) {
                     case 'checked':
                         return "0 0 48 48";
+                    case 'alarm':
+                        return "0 0 24 24";
                     case 'pawn':
                     case 'scout':
                     case 'rook':
@@ -80,6 +82,21 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                 }
             case 'symbol':
                 switch (name) {
+                    case 'alarm':
+                        return (
+                            <G>
+                                <Defs>
+                                    <LinearGradient id="a" x1={10} y1={10} x2={20} y2={20} gradientUnits="userSpaceOnUse">
+                                        <Stop offset={0} stopColor={leftColor} />
+                                        <Stop offset={1} stopColor={rightColor} />
+                                    </LinearGradient>
+                                </Defs>
+                                <G fill="url(#a)" fillRule="nonzero">
+                                    <Path stroke="#000" strokeWidth={1.5} d="M9.14939 7.8313C8.57654 5.92179 10.0064 4 12 4V4C13.9936 4 15.4235 5.92179 14.8506 7.8313L13.2873 13.0422C13.2171 13.2762 13.182 13.3932 13.128 13.4895C12.989 13.7371 12.7513 13.9139 12.4743 13.9759C12.3664 14 12.2443 14 12 14V14C11.7557 14 11.6336 14 11.5257 13.9759C11.2487 13.9139 11.011 13.7371 10.872 13.4895C10.818 13.3932 10.7829 13.2762 10.7127 13.0422L9.14939 7.8313Z"/>
+                                    <Circle cx={12} cy={19} r={2} stroke="#000" strokeWidth={1.5} />
+                                </G>
+                            </G>
+                        );
                     case 'checked':
                         return (
                             <G>

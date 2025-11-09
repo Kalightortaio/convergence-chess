@@ -3,6 +3,7 @@ import { Piece } from "./Piece";
 
 export class DeadKing extends Piece {
     type: 'dead_king' = 'dead_king';
+    note: string = 'XX ';
 
     getRawMoves(_: Cells[][]): Coord[] {
         return [];

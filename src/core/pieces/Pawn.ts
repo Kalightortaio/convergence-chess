@@ -1,11 +1,17 @@
-import { PAWN_FORWARD } from "../../Constants";
+import { ORTHOGONAL_DIRECTIONS, PAWN_FORWARD } from "../../Constants";
 import { Cells, Coord } from "../../Types";
 import { Piece } from "./Piece";
 
 export class Pawn extends Piece {
     type: 'pawn' = 'pawn';
+    note: string = '';
     hasMoved: boolean = false;
     isEnPassantTarget: boolean = false;
+    enPassantSquare: Coord | null = null;
+
+    sameCoord(a: Coord | null, b: Coord): boolean {
+        return !!a && a.x === b.x && a.y === b.y;
+    }
 
     getRawMoves(board: Cells[][]): Coord[] {
         const moves: Coord[] = [];
@@ -22,10 +28,8 @@ export class Pawn extends Piece {
             moves.push(step2.index);
         }
 
-        const diagonals: [number, number][] = [
-            [fx + fy, fy + fx],
-            [fx - fy, fy - fx],
-        ];
+        const diagonals: [number, number][] = fx === 0 ? [[1, fy], [-1, fy]] : [[fx, 1], [fx, -1]];
+
         for (const [dx, dy] of diagonals) {
             const maxStep = 1;
             moves.push(...this.collectMoves(board, dx, dy, maxStep, true));
@@ -34,11 +38,13 @@ export class Pawn extends Piece {
         for (const [dx, dy] of diagonals) {
             const diagonalSquare = board[y + dy]?.[x + dx];
             if (!diagonalSquare || diagonalSquare.piece) continue;
-
-            const adjacentPawnSquare = board[y]?.[x + dx];
-            const adjacentPawn = adjacentPawnSquare?.piece;
-            if (adjacentPawn?.type === "pawn" && adjacentPawn.player !== this.player && (adjacentPawn as Pawn).isEnPassantTarget) {
-                moves.push(diagonalSquare.index);
+            
+            for (const [ox, oy] of ORTHOGONAL_DIRECTIONS) {
+                const adjCell = board[y + oy]?.[x + ox];
+                const adjPawn = adjCell?.piece as Pawn | null;
+                if (adjPawn && adjPawn?.type === "pawn" && adjPawn.getPlayer() !== this.getPlayer() && adjPawn.isEnPassantTarget && this.sameCoord(adjPawn.enPassantSquare, diagonalSquare.index)) {
+                    moves.push(diagonalSquare.index);
+                }
             }
         }
 

@@ -18,6 +18,7 @@ export class Player { //abstract later
     capturedPieces: { type: PieceType; count: number }[] = [];
     score: number = 0;
     isDefeat: boolean = false;
+    lastMove: string = "";
 
     constructor(id: number, name: string, title: string, rightColor: string, leftColor: string, photo: ({ uri: string } | number), position: CornerPosition) {
         this.id = id;
