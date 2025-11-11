@@ -12,7 +12,7 @@ import Profile from "./Profile";
 import Learn from "./Learn";
 import Navbar from "../components/Navbar";
 
-const Tab = createBottomTabNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<RootStackParamList>(); 
 
 export default function SafeAreaApp() {
     const { isPortrait } = useDimensions();

@@ -10,11 +10,10 @@ type ProfileProps = {
 
 export default function Profile({ navigation }: ProfileProps) {
     const { scaleText } = useDimensions();
-
     return (
         <NavigationProvider navigation={navigation}>
             <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'red'}}>
-                <Text style={{fontSize: scaleText(24), fontFamily: 'ComicSansMS'}}>Profile Screen</Text>
+                <Text adjustsFontSizeToFit={true} style={{fontSize: scaleText(24), fontFamily: 'ComicSansMS' }}>Profile Screen</Text>
             </View>
         </NavigationProvider>
     )

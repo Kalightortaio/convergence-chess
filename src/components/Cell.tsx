@@ -53,11 +53,11 @@ function Cell({ onCellPress, player, viewRotation = 0, ...cellStateProps }: Cell
                 {shaded && selectedColor && !checkedPiece && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(selectedColor, 0.4) }]} />)}
                 {checkedPiece && rightColor && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(rightColor, 0.8) }]} />)}
                 {pieceType && <SVGLoader style={{ zIndex: 1 }} type="symbol" name={pieceType} rightColor={rightColor} leftColor={leftColor} rotate={deadKing}/>}
-                <View style={[StyleSheet.absoluteFill, { transform: [{ rotate: `${viewRotation}deg` }] }, styles.svgContainer]}>
-                    {onlyChoice && <View style={styles.onlyChoiceSVG}>
+                <View style={[StyleSheet.absoluteFill, { zIndex: 2, transform: [{ rotate: `${viewRotation}deg` }] }]}>
+                    {onlyChoice && <View style={[styles.svgContainer, styles.onlyChoiceSVG]}>
                         <SVGLoader type="symbol" name="alarm" rightColor={rightColor} leftColor={leftColor}/>
                     </View>}
-                    {checkedPiece && rightColor && <View style={styles.checkedSVG}>
+                    {checkedPiece && rightColor && <View style={[styles.svgContainer, styles.checkedSVG]}>
                         <SVGLoader type="symbol" name="checked" rightColor={rightColor} leftColor={leftColor}/>
                     </View>}
                 </View>
@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
     svgContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 2,
     },
     checkedSVG: {
         position: 'absolute',

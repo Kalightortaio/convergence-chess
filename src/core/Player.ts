@@ -1,4 +1,4 @@
-import { PIECE_POINTS } from "../Constants";
+import { PIECE_POINTS, TURN_LIMIT } from "../Constants";
 import { CornerPosition } from "../Types";
 import { Piece, PieceType } from "./pieces/Piece";
 
@@ -13,12 +13,12 @@ export class Player { //abstract later
     botColor: string;
     photo: { uri: string } | number;
     position: CornerPosition;
-    
     pieces: Piece[] = [];
     capturedPieces: { type: PieceType; count: number }[] = [];
     score: number = 0;
     isDefeat: boolean = false;
     lastMove: string = "";
+    timeRemaining: number = TURN_LIMIT;
 
     constructor(id: number, name: string, title: string, rightColor: string, leftColor: string, photo: ({ uri: string } | number), position: CornerPosition) {
         this.id = id;

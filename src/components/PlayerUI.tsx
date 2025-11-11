@@ -3,7 +3,6 @@ import SVGLoader from "./SVGLoader";
 import { Player } from "../core/Player";
 import { useDimensions } from "../hooks/useDimensions";
 import { useMemo } from "react";
-import { PIECE_POINTS } from "../Constants";
 
 interface PlayerUIProps {
   players: Player[];
@@ -18,6 +17,8 @@ export default function PlayerUI({ players, viewRotation = 0, setViewRotation }:
             position: 'absolute',
             width: 5 * cellSize,
             height: 5 * cellSize,
+            maxWidth: 5 * cellSize,
+            maxHeight: 5 * cellSize,
             borderWidth: Math.floor(cellSize / 4),
             padding: Math.floor(cellSize / 4),
             gap: Math.floor(cellSize / 4),
@@ -88,9 +89,9 @@ export default function PlayerUI({ players, viewRotation = 0, setViewRotation }:
                             <Image style={hookStyles.image} source={player.photo}/>
                             <View style={{ flexDirection: "column", flex: 1 }}>
                                 <View style={{width: '100%'}}>
-                                    <Text style={hookStyles.nameText} numberOfLines={1} ellipsizeMode="tail">{player.name}</Text>
+                                    <Text adjustsFontSizeToFit={true} style={hookStyles.nameText} numberOfLines={1} ellipsizeMode="tail">{player.name}</Text>
                                 </View>
-                                <Text style={hookStyles.subtitleText} numberOfLines={1} ellipsizeMode="clip">{player.title}</Text>
+                                <Text adjustsFontSizeToFit={true} style={hookStyles.subtitleText} numberOfLines={1} ellipsizeMode="clip">{player.title}</Text>
                             </View>
                         </View>
                         <View style={hookStyles.captureRow}>
@@ -99,17 +100,17 @@ export default function PlayerUI({ players, viewRotation = 0, setViewRotation }:
                                     <View key={piece.type} style={hookStyles.captureSlot}>
                                         <SVGLoader type="symbol" scale={0.75} name={piece.type} leftColor="white" rightColor="white" />
                                         <View style={hookStyles.captureTextContainer}>
-                                            <Text style={hookStyles.captureText}>×{piece.count}</Text>
+                                            <Text adjustsFontSizeToFit={true} style={hookStyles.captureText}>×{piece.count}</Text>
                                         </View>
                                     </View>
                                 )
                             )}
                         </View>
                         <View style={hookStyles.scoreRow}>
-                            <Text style={hookStyles.subtitleText} numberOfLines={1} ellipsizeMode="clip">Score: {player.score}</Text>
+                            <Text adjustsFontSizeToFit={true} style={hookStyles.subtitleText} numberOfLines={1} ellipsizeMode="clip">Score: {player.score}</Text>
                         </View>
                         <View style={hookStyles.scoreRow}>
-                            <Text style={hookStyles.subtitleText} numberOfLines={1} ellipsizeMode="clip">Move: {player.lastMove}</Text>
+                            <Text adjustsFontSizeToFit={true} style={hookStyles.subtitleText} numberOfLines={1} ellipsizeMode="clip">Move: {player.lastMove}</Text>
                         </View>
                     </View>
                 </TouchableHighlight>

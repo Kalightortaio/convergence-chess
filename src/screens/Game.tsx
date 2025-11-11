@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Modal, TouchableWithoutFeedback, Text } from 'react-native';
 import { Cells, CellStateProps, Coord, Pieces, RootStackParamList } from '../Types';
-import { PAWN_FORWARD } from '../Constants';
+import { PAWN_FORWARD, TURN_LIMIT } from '../Constants';
 import Zoomable from '../components/Zoomable';
 import Cell from '../components/Cell';
-import { throttle } from 'lodash';
+import { set, throttle } from 'lodash';
 import { Pawn, Scout, Rook, Knight, Bishop, Queen, King } from "../core/pieces";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { NavigationProvider } from '../components/NavigationProvider';
@@ -13,14 +13,14 @@ import { Player } from '../core/Player';
 import TurnIndicator from '../components/TurnIndicator';
 import { useDimensions } from "../hooks/useDimensions";
 import MoveHistory from '../components/MoveHistory';
-
+import Checkbox from 'expo-checkbox';
 
 type GameProps = {
     navigation: StackNavigationProp<RootStackParamList, 'Game'>;
 };
 
 export default function Game({ navigation }: GameProps) {
-    const { cellSize, boardSize, gridSize, isPortrait } = useDimensions();
+    const { cellSize, boardSize, gridSize, isPortrait, overlaySize, visibleWidth, usableHeight, scaleText } = useDimensions();
     // Temp until Lobby is made
     // Todo: Allow players to choose their colors in the lobby. Names and profile pics should be fetched from their profiles, and can be changed on the fly.
     const [players, setPlayers] = useState<Player[]>(() => [
@@ -35,9 +35,12 @@ export default function Game({ navigation }: GameProps) {
     const [isPanOrPinchActive, setPanOrPinchActive] = useState(false);
     const [lastSelected, setLastSelected] = useState<CellStateProps | null>(null);
     const [viewRotation, setViewRotation] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+    const [settingsModal, setSettingsModal] = useState(false);
+    const [isChecked, setIsChecked] = useState<{ [key: string]: boolean }>({ test: false });
     const DEBUG_FROZEN_ARMY = true; // When your checkmated, you lose control of your pieces but they remain on the board. Will eventually be a lobby feature.
-    const DEBUG_IGNORE_TURNS = true;
-    const currentPlayer = DEBUG_IGNORE_TURNS ? lastSelected?.piece?.getPlayer() : players.find(p => p.id === turn);
+    const DEBUG_IGNORE_TURNS = true; // For testing purposes only, allows moving any piece at any time.
+    const currentPlayer = players.find(p => p.id === turn);
 
     function initBoard(): Cells[][] {
         const initialCells: Cells[][] = [];
@@ -102,31 +105,52 @@ export default function Game({ navigation }: GameProps) {
     }
 
     useEffect(() => {
-        const updatedBoard = board.map(row =>
-            row.map(cell => {
-            if (!cell) return null;
-
-            const clearedCell = { ...cell, shaded: false, selected: false };
-
-            const piece = clearedCell.piece;
-            if (piece?.type === "pawn" && piece.getPlayer().id === turn) {
-                const pawn = piece as Pawn;
-                if (pawn.isEnPassantTarget) pawn.isEnPassantTarget = false;
-            }
-
-            return clearedCell;
-            })
-        );
-
-        setBoard(updatedBoard);
+        // Clear en passant targets at the start of a new turn
+        setBoard(b => b.map(r => r.map(c => c && c.piece?.type === "pawn" && c.piece.getPlayer().id === turn ? ((c.piece as Pawn).isEnPassantTarget = false, c) : c)));
     }, [turn]);
 
+    useEffect(() => {
+        if (isPaused) return;
+        const currentIndex = turn - 1;
+        const timer = setInterval(() => {
+            setPlayers(prev => {
+            const updated = [...prev];
+            const current = updated[currentIndex];
+            if (!current || current.timeRemaining <= 0) return updated;
+
+            current.timeRemaining -= 1;
+
+            if (current.timeRemaining <= 0) {
+                let nextTurn = (turn % 4) + 1;
+                while (updated.find(p => p.id === nextTurn)?.isDefeat) {
+                nextTurn = (nextTurn % 4) + 1;
+                }
+                current.timeRemaining = TURN_LIMIT;
+                // Deselect any selected piece at the end of a turn
+                if (lastSelected) drawMoves(lastSelected, false);
+                setLastSelected(null);
+                setBoard(prev => prev.map(row => row.map(c => c ? { ...c, shaded:false, selected:false } : null)));
+                setTurn(nextTurn);
+            }
+
+            return updated;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [turn, isPaused]);
+
     const onCellPress = throttle((row: number, col: number) => {
+        if (isPaused) return;
         if (!isPanOrPinchActive) {
             const cell = board[row]?.[col];
             const piece = cell?.piece;
             const player = piece?.getPlayer();
             if (!cell) return;
+            // Instantly switch turns in debug mode when tapping any piece
+            if (DEBUG_IGNORE_TURNS && player?.id && player.id !== turn) {
+                setTurn(player.id);
+            }
             // Enforce turn order.
             if (!DEBUG_IGNORE_TURNS) {
                 if (!lastSelected) {
@@ -468,13 +492,18 @@ export default function Game({ navigation }: GameProps) {
         },
     }), [boardSize, cellSize]);
 
+    const settingsPanelSize = useMemo(() => {
+        const t = Math.min(Math.max(((14 * cellSize) - 400) / (800 - 400), 0), 1);
+        return (14 * cellSize) + ((8 * cellSize) - (14 * cellSize)) * t;
+    }, [boardSize, cellSize]);
+
     return (
         <NavigationProvider navigation={navigation}>
             <View style={[styles.container, { flexDirection: isPortrait ? 'column' : 'row' }]}>
-                <View style={styles.sideDisplay}>
-                    <TurnIndicator player={currentPlayer} leftOverlay={isPortrait}/>
+                <View style={{ width: isPortrait ? '100%' : overlaySize, height: isPortrait ? overlaySize : '100%' }}>
+                    {isPortrait ? <TurnIndicator player={currentPlayer} isPaused={isPaused} setIsPaused={setIsPaused} setSettingsModal={setSettingsModal} /> : <MoveHistory />}
                 </View>
-                <View style={[styles.boardWrapper, { zIndex: 2, elevation: 2 }]}>
+                <View style={[styles.boardWrapper, { zIndex: 2 }]}>
                     <Zoomable style={hookStyles.board} setPanOrPinchActive={setPanOrPinchActive}>
                         {board.map((row, x) => (
                             <View key={`row-${x}`} style={styles.row}>
@@ -486,9 +515,22 @@ export default function Game({ navigation }: GameProps) {
                         <PlayerUI players={players} viewRotation={viewRotation} setViewRotation={setViewRotation} />
                     </Zoomable>
                 </View>
-                <View style={styles.sideDisplay}>
-                    <MoveHistory rightOverlay={isPortrait}/>
+                <View style={{ width: isPortrait ? '100%' : overlaySize, height: isPortrait ? overlaySize : '100%' }}>
+                    {isPortrait ? <MoveHistory /> : <TurnIndicator player={currentPlayer} isPaused={isPaused} setIsPaused={setIsPaused} setSettingsModal={setSettingsModal} />}
                 </View>
+                <Modal visible={settingsModal} transparent={true} animationType='none'>
+                    <TouchableWithoutFeedback onPress={() => setSettingsModal(false)}>
+                        <View style={{ position: 'absolute', width: visibleWidth, height: usableHeight, zIndex: 4 }} />
+                    </TouchableWithoutFeedback>
+                    <View style={{ width: visibleWidth, height: usableHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 5, pointerEvents: 'box-none' }}>
+                        <View style={{ width: settingsPanelSize, height: settingsPanelSize, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center', borderRadius: cellSize / 8 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Checkbox value={isChecked['test']} color={isChecked ? 'grey' : undefined} onValueChange={() => setIsChecked(prev => ({...prev, test: !prev['test']}))} />
+                                <Text adjustsFontSizeToFit={true} style={{ color: 'white', fontFamily: 'ComicSansMS', fontSize: scaleText(12), marginLeft: scaleText(8) }}>Test Checkbox</Text>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </View>
         </NavigationProvider>
     );
@@ -497,7 +539,7 @@ export default function Game({ navigation }: GameProps) {
 const styles = StyleSheet.create({
     container: { 
         flex: 1, 
-        justifyContent: 'center', 
+        justifyContent: 'flex-start', 
         alignItems: 'center', 
         backgroundColor: '#b59669ff', 
         overflow: 'visible',
@@ -505,11 +547,6 @@ const styles = StyleSheet.create({
     boardWrapper: {
         overflow: 'visible',
         alignSelf: 'center',
-    },
-    sideDisplay: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
     },
     row: {
         flexDirection: 'row'

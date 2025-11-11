@@ -10,11 +10,10 @@ type LearnProps = {
 
 export default function Learn({ navigation }: LearnProps) {
     const { scaleText } = useDimensions();
-    
     return (
         <NavigationProvider navigation={navigation}>
             <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'blue'}}>
-                <Text style={{fontSize: scaleText(24), fontFamily: 'ComicSansMS'}}>Learn Screen</Text>
+                <Text adjustsFontSizeToFit={true} style={{ fontSize: scaleText(24), fontFamily: 'ComicSansMS' }}>Learn Screen</Text>
             </View>
         </NavigationProvider>
     )

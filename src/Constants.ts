@@ -26,3 +26,4 @@ export const PIECE_POINTS: Record<PieceType, number> = {
   king: 30,
   dead_king: 0,
 };
+export const TURN_LIMIT = 30;

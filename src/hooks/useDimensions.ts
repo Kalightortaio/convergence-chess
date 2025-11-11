@@ -18,15 +18,18 @@ export function useDimensions() {
     const visibleHeight = window.height - (insets.top + insets.bottom);
     const isPortrait = visibleHeight >= visibleWidth;
     const minDim = isPortrait ? visibleWidth : visibleHeight;
-    const navBarHeightInCells = isPortrait ? 0 : 2.5;
-    const cellSize = minDim / (gridSize + navBarHeightInCells);
+    const maxDim = isPortrait ? visibleHeight : visibleWidth;
+    const navBarSizeInCells = 2.5;
+    const cellSize = minDim / (gridSize + (isPortrait ? 0 : navBarSizeInCells));
+    const navBarSize = navBarSizeInCells * cellSize;
+    const usableHeight = visibleHeight - navBarSize;
     const boardSize = cellSize * gridSize;
+    const overlaySize = (maxDim - boardSize - (isPortrait ? navBarSize : 0)) / 2;
 
     const scaleText = (fontSize: number): number => {
-        const baseScreenDimension = 450;
-        const scale = minDim / baseScreenDimension;
+        const scale = boardSize / 400;
         return Math.round(fontSize * scale);
     };
 
-    return { boardSize, cellSize, gridSize, isPortrait, visibleHeight, visibleWidth, scaleText };
+    return { boardSize, cellSize, gridSize, isPortrait, visibleHeight, visibleWidth, overlaySize, navBarSize, usableHeight, scaleText };
 }
