@@ -15,12 +15,13 @@ interface CellComponentProps extends CellStateProps {
 
 function Cell({ onCellPress, player, viewRotation = 0, ...cellStateProps }: CellComponentProps) {
     const { index, shaded, piece } = cellStateProps;
-    const selectedColor = player?.rightColor;
+    const selectedColor = player?.middleColor;
     const whiteCell = (index.x + index.y) % 2 === 0;
     const pieceType = piece?.type;
     const checkedPiece = (pieceType === "king") && (piece as King).checked;
     const onlyChoice = piece?.onlyChoice;
-    const deadKing = ((pieceType === "dead_king") ? 90 : 0) + viewRotation;
+    const renderDeadKing = (pieceType === "king") && (piece as King).dead;
+    const rotation = ((renderDeadKing) ? 90 : 0) + viewRotation;
 
     const rightColor = piece?.getPlayer().rightColor;
     const leftColor = piece?.getPlayer().leftColor;
@@ -50,9 +51,10 @@ function Cell({ onCellPress, player, viewRotation = 0, ...cellStateProps }: Cell
     return (
         <TouchableWithoutFeedback onPress={() => onCellPress()}>
             <View style={[hookStyles.cell, whiteCell ? styles.whiteCell : styles.blackCell, transform({ rotate: `${viewRotation}deg` })]}>
-                {shaded && selectedColor && !checkedPiece && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(selectedColor, 0.4) }]} />)}
-                {checkedPiece && rightColor && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(rightColor, 0.8) }]} />)}
-                {pieceType && <SVGLoader style={{ zIndex: 1 }} type="symbol" name={pieceType} rightColor={rightColor} leftColor={leftColor} rotate={deadKing}/>}
+                {shaded && selectedColor && !checkedPiece && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(selectedColor, 0.4) }]}/>)}
+                {checkedPiece && rightColor && (<View style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(rightColor, 0.8) }]}/>)}
+                {pieceType && !renderDeadKing && <SVGLoader style={{ zIndex: 1 }} type="symbol" name={pieceType} rightColor={rightColor} leftColor={leftColor} rotate={rotation}/>}
+                {pieceType && renderDeadKing && <SVGLoader style={{ zIndex: 1 }} type="symbol" name={"dead_king"} rightColor={rightColor} leftColor={leftColor} rotate={rotation}/>}
                 <View style={[StyleSheet.absoluteFill, { zIndex: 2, transform: [{ rotate: `${viewRotation}deg` }] }]}>
                     {onlyChoice && <View style={[styles.svgContainer, styles.onlyChoiceSVG]}>
                         <SVGLoader type="symbol" name="alarm" rightColor={rightColor} leftColor={leftColor}/>

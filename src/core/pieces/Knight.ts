@@ -13,6 +13,7 @@ export class Knight extends Piece {
             const maxStep = 1;
             moves.push(...this.collectMoves(board, dx, dy, maxStep));
         }
+        
         return moves;
     }
 }

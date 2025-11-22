@@ -8,9 +8,11 @@ export class Queen extends Piece {
 
     getRawMoves(board: Cells[][]): Coord[] {
         const moves: Coord[] = [];
+        
         for (const [dx, dy] of OCTAGONAL_DIRECTIONS) {
             moves.push(...this.collectMoves(board, dx, dy));
         }
+        
         return moves;
     }
 }

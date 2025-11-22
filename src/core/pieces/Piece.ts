@@ -1,7 +1,7 @@
 import { Cells, Coord } from "../../Types";
 import { Player } from "../Player";
 
-export type PieceType = 'pawn'|'scout'|'rook'|'knight'|'bishop'|'queen'|'king'|'dead_king';
+export type PieceType = 'pawn'|'prince'|'rook'|'knight'|'bishop'|'queen'|'king'|'princess';
 
 export abstract class Piece {
     index: { x: number; y: number };

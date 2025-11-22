@@ -14,6 +14,7 @@ export class Rook extends Piece {
         for (const [dx, dy] of ORTHOGONAL_DIRECTIONS) {
             moves.push(...this.collectMoves(board, dx, dy));
         }
+        
         return moves;
     }
 }

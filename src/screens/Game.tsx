@@ -4,8 +4,8 @@ import { Cells, CellStateProps, Coord, Pieces, RootStackParamList } from '../Typ
 import { PAWN_FORWARD, TURN_LIMIT } from '../Constants';
 import Zoomable from '../components/Zoomable';
 import Cell from '../components/Cell';
-import { set, throttle } from 'lodash';
-import { Pawn, Scout, Rook, Knight, Bishop, Queen, King } from "../core/pieces";
+import { throttle } from 'lodash';
+import { Pawn, Prince, Rook, Knight, Bishop, Queen, King, Princess } from "../core/pieces";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { NavigationProvider } from '../components/NavigationProvider';
 import PlayerUI from '../components/PlayerUI';
@@ -27,7 +27,7 @@ export default function Game({ navigation }: GameProps) {
         new Player(1, "Red", "Novice", "#800000", "#FF0000", {uri: "https://randomuser.me/api/portraits/men/42.jpg"}, "botRight"),
         new Player(2, "Blue", "Adept", "#0000FF", "#87CEEB", {uri: "https://randomuser.me/api/portraits/women/0.jpg"}, "botLeft"),
         new Player(3, "Green", "Comeback Kid", "#006400", "#00FF7F", {uri: "https://randomuser.me/api/portraits/men/16.jpg"}, "topLeft"),
-        new Player(4, "Yellow", "Grandmaster", "#B8860B", "#FFD700", {uri: "https://randomuser.me/api/portraits/women/7.jpg"}, "topRight"),
+        new Player(4, "Purple", "Grandmaster", "#670bb8ff", "#d900ffff", {uri: "https://randomuser.me/api/portraits/women/7.jpg"}, "topRight"),
     ]);
 
     const [turn, setTurn] = useState<number>(1);
@@ -39,7 +39,9 @@ export default function Game({ navigation }: GameProps) {
     const [settingsModal, setSettingsModal] = useState(false);
     const [isChecked, setIsChecked] = useState<{ [key: string]: boolean }>({ test: false });
     const DEBUG_FROZEN_ARMY = true; // When your checkmated, you lose control of your pieces but they remain on the board. Will eventually be a lobby feature.
-    const DEBUG_IGNORE_TURNS = true; // For testing purposes only, allows moving any piece at any time.
+    const DEBUG_IGNORE_TURNS = false; // For testing purposes only, allows moving any piece at any time.
+    const DEBUG_TIME_DISABLED = true; // Disables the timer for testing purposes, eventually to be a lobby feature.
+    const DEBUG_AUTO_ROTATE = true; // Automatically rotates the view to the current player at the start of their turn.
     const currentPlayer = players.find(p => p.id === turn);
 
     function initBoard(): Cells[][] {
@@ -65,7 +67,8 @@ export default function Game({ navigation }: GameProps) {
     function getStartingPieces(row: number, col: number): Pieces {
         const layouts = {
             front: Array(8).fill('pawn'),
-            middle: ['pawn', 'scout', 'knight', 'bishop', 'bishop', 'knight', 'scout', 'pawn'],
+            middleFront: Array(8).fill('pawn'),
+            middleBack: ['prince', 'prince', 'prince', 'princess', 'princess', 'prince', 'prince', 'prince'],
             back: ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'],
         } as const;
 
@@ -76,29 +79,34 @@ export default function Game({ navigation }: GameProps) {
             const position = { x: col, y: row };
 
             switch (type) {
-                case "pawn":   return new Pawn(position, player);
-                case "scout":  return new Scout(position, player);
-                case "rook":   return new Rook(position, player);
-                case "knight": return new Knight(position, player);
-                case "bishop": return new Bishop(position, player);
-                case "queen":  return new Queen(position, player);
-                case "king":   return new King(position, player);
-                default:       return null;
+                case "pawn":     return new Pawn(position, player);
+                case "prince":    return new Prince(position, player);
+                case "rook":     return new Rook(position, player);
+                case "knight":   return new Knight(position, player);
+                case "bishop":   return new Bishop(position, player);
+                case "queen":    return new Queen(position, player);
+                case "king":     return new King(position, player);
+                case "princess":  return new Princess(position, player);
+                default:         return null;
             }
         }
 
         const p1 = players[0], p2 = players[1], p3 = players[2], p4 = players[3];
-        if (row === 15) return pickPiece(col, p1, 'front');
-        if (row === 16) return pickPiece(col, p1, 'middle');
+        if (row === 14) return pickPiece(col, p1, 'front');
+        if (row === 15) return pickPiece(col, p1, 'middleFront');
+        if (row === 16) return pickPiece(col, p1, 'middleBack', true);
         if (row === 17) return pickPiece(col, p1, 'back');
-        if (col === 2)  return pickPiece(row, p2, 'front');
-        if (col === 1)  return pickPiece(row, p2, 'middle');
+        if (col === 3)  return pickPiece(row, p2, 'front');
+        if (col === 2)  return pickPiece(row, p2, 'middleFront');
+        if (col === 1)  return pickPiece(row, p2, 'middleBack', true);
         if (col === 0)  return pickPiece(row, p2, 'back');
-        if (row === 2)  return pickPiece(col, p3, 'front');
-        if (row === 1)  return pickPiece(col, p3, 'middle');
+        if (row === 3)  return pickPiece(col, p3, 'front');
+        if (row === 2)  return pickPiece(col, p3, 'middleFront');
+        if (row === 1)  return pickPiece(col, p3, 'middleBack', true);
         if (row === 0)  return pickPiece(col, p3, 'back', true);
-        if (col === 15) return pickPiece(row, p4, 'front');
-        if (col === 16) return pickPiece(row, p4, 'middle');
+        if (col === 14) return pickPiece(row, p4, 'front');
+        if (col === 15) return pickPiece(row, p4, 'middleFront');
+        if (col === 16) return pickPiece(row, p4, 'middleBack', true);
         if (col === 17) return pickPiece(row, p4, 'back', true);
 
         return null;
@@ -106,7 +114,11 @@ export default function Game({ navigation }: GameProps) {
 
     useEffect(() => {
         // Clear en passant targets at the start of a new turn
-        setBoard(b => b.map(r => r.map(c => c && c.piece?.type === "pawn" && c.piece.getPlayer().id === turn ? ((c.piece as Pawn).isEnPassantTarget = false, c) : c)));
+        setBoard(b => b.map(r => r.map(c => c && c.piece?.type === "pawn" && c.piece.getPlayer().id === turn ? (((c.piece as Pawn).isEnPassantTarget = [], (c.piece as Pawn).enPassantSquare = [], c)) : c)));
+        // Auto-rotate view to current player
+        if (DEBUG_AUTO_ROTATE) {
+            setViewRotation((turn - 1) * 90);
+        }
     }, [turn]);
 
     useEffect(() => {
@@ -114,31 +126,51 @@ export default function Game({ navigation }: GameProps) {
         const currentIndex = turn - 1;
         const timer = setInterval(() => {
             setPlayers(prev => {
-            const updated = [...prev];
-            const current = updated[currentIndex];
-            if (!current || current.timeRemaining <= 0) return updated;
+                const updated = [...prev];
+                const current = updated[currentIndex];
+                if (!current || current.timeRemaining <= 0) return updated;
 
-            current.timeRemaining -= 1;
+                if (!DEBUG_TIME_DISABLED) current.timeRemaining -= 1;
 
-            if (current.timeRemaining <= 0) {
-                let nextTurn = (turn % 4) + 1;
-                while (updated.find(p => p.id === nextTurn)?.isDefeat) {
-                nextTurn = (nextTurn % 4) + 1;
+                if (!DEBUG_TIME_DISABLED && current.timeRemaining <= 0) {
+                    let nextTurn = (turn % 4) + 1;
+                    while (updated.find(p => p.id === nextTurn)?.isDefeat) {
+                    nextTurn = (nextTurn % 4) + 1;
+                    }
+                    current.timeRemaining = TURN_LIMIT;
+                    current.moveCount = 0;
+                    if (lastSelected) drawMoves(lastSelected, false);
+                    setLastSelected(null);
+                    setBoard(prev => prev.map(row => row.map(c => c ? { ...c, shaded:false, selected:false } : null)));
+                    setTurn(nextTurn);
                 }
-                current.timeRemaining = TURN_LIMIT;
-                // Deselect any selected piece at the end of a turn
-                if (lastSelected) drawMoves(lastSelected, false);
-                setLastSelected(null);
-                setBoard(prev => prev.map(row => row.map(c => c ? { ...c, shaded:false, selected:false } : null)));
-                setTurn(nextTurn);
-            }
 
-            return updated;
+                return updated;
             });
         }, 1000);
 
         return () => clearInterval(timer);
     }, [turn, isPaused]);
+
+    function readyNextTurn() {
+        let nextTurn = (turn % 4) + 1;
+        if (DEBUG_FROZEN_ARMY) {
+            let safety = 0;
+            while (players.find(p => p.id === nextTurn)?.isDefeat && safety < 4) {
+                nextTurn = (nextTurn % 4) + 1;
+                safety++;
+            }
+        }
+        setPlayers(prev => {
+            const updated = [...prev];
+            const current = updated.find(p => p.id === turn);
+            if (current) current.timeRemaining = TURN_LIMIT;
+            if (current) current.moveCount = 0;
+            return updated;
+        });
+
+        setTurn(nextTurn);
+    }
 
     const onCellPress = throttle((row: number, col: number) => {
         if (isPaused) return;
@@ -188,18 +220,20 @@ export default function Game({ navigation }: GameProps) {
             }
             // Moving to a shaded cell.
             if (cell.shaded) {
+                const p = lastSelected.piece?.getPlayer();
                 drawMoves(lastSelected, false);
                 doMove(cell);
                 if (!DEBUG_IGNORE_TURNS) {
-                    let nextTurn = (turn % 4) + 1;
-                    if (DEBUG_FROZEN_ARMY) {
-                        let safety = 0;
-                        while (players.find(p => p.id === nextTurn)?.isDefeat && safety < 4) {
-                            nextTurn = (nextTurn % 4) + 1;
-                            safety++;
+                    if (p && p.moveCount === 1) {
+                        const hasPawns = p.getPieces().some(p => p && p.type === "pawn");
+                        if (!hasPawns) {
+                            readyNextTurn();
+                            return;
                         }
                     }
-                    setTurn(nextTurn);
+                    if (p && p.moveCount > 1) {
+                        readyNextTurn();
+                    }
                 }
                 return;
             }
@@ -226,12 +260,17 @@ export default function Game({ navigation }: GameProps) {
                 const candidates = [cand1, cand2];
                 for (const cand of candidates) {
                     const epPawn = cand?.piece as Pawn | undefined;
-                    if (epPawn && epPawn.type === "pawn" && epPawn.getPlayer() !== player && epPawn.isEnPassantTarget && epPawn.enPassantSquare && epPawn.enPassantSquare.x === to.x && epPawn.enPassantSquare.y === to.y) {
-                        cand!.piece = null;
-                        epPawn.getPlayer().removePiece(epPawn);
-                        player.addCapturedPiece(epPawn.type);
-                        setPlayers([...players]);
-                        break;
+                    if (!epPawn || epPawn.type !== "pawn" || epPawn.getPlayer() === player) continue;
+
+                    for (let i = 0; i < epPawn.isEnPassantTarget.length; i++) {
+                        const sq = epPawn.enPassantSquare[i];
+                        if (epPawn.isEnPassantTarget[i] && sq && sq.x === to.x && sq.y === to.y) {
+                            cand!.piece = null;
+                            epPawn.getPlayer().removePiece(epPawn);
+                            player.addCapturedPiece(epPawn.type);
+                            setPlayers([...players]);
+                            break;
+                        }
                     }
                 }
             }
@@ -239,26 +278,27 @@ export default function Game({ navigation }: GameProps) {
         // Set en passant target
         if (movingPiece.type === "pawn") {
             const pawn = movingPiece as Pawn;
-            if (!pawn.hasMoved) {
-                const [fx, fy] = PAWN_FORWARD[pawn.getPlayer().id];
-                const isDoubleStep = dx === 2 * fx && dy === 2 * fy;
-                if (isDoubleStep) {
-                    pawn.isEnPassantTarget = true;
-                    pawn.enPassantSquare = { x: from.x + fx, y: from.y + fy };
-                } else {
-                    pawn.enPassantSquare = null;
-                }
+            const [fx, fy] = PAWN_FORWARD[pawn.getPlayer().id];
+            const isDoubleStep = dx === 2 * fx && dy === 2 * fy;
+            if (isDoubleStep) {
+                pawn.isEnPassantTarget.push(true);
+                pawn.enPassantSquare.push({ x: from.x + fx, y: from.y + fy });
+                // keep arrays at max length 2
+                if (pawn.isEnPassantTarget.length > 2) pawn.isEnPassantTarget.shift();
+                if (pawn.enPassantSquare.length > 2) pawn.enPassantSquare.shift();
+
+            } else {
+                pawn.isEnPassantTarget.push(false);
+                pawn.enPassantSquare.push(null);
+                // keep arrays synced in length
+                if (pawn.isEnPassantTarget.length > 2) pawn.isEnPassantTarget.shift();
+                if (pawn.enPassantSquare.length > 2) pawn.enPassantSquare.shift();
             }
         }
         // Remove captured piece from player's pieces
         if (targetPiece && enemyPlayer) {
             enemyPlayer.removePiece(targetPiece);
-            if (targetPiece.type === "dead_king") {
-                // Give the capturing player a captured king for scoring purposes
-                player.addCapturedPiece("king");
-            } else {
-                player.addCapturedPiece(targetPiece.type);
-            }
+            player.addCapturedPiece(targetPiece.type);
             setPlayers([...players]);
         }
         // Castling move for king
@@ -304,6 +344,7 @@ export default function Game({ navigation }: GameProps) {
         const targetNote = targetPiece ? ('x' + targetPiece.note) : '-';
         const moveNotation = `${movingPiece.note}${columns[from.x]}${gridSize - from.y}${targetNote}${columns[to.x]}${gridSize - to.y}`;
         player.lastMove = moveNotation;
+        player.moveCount += 1;
         // Move the piece
         movingPiece.index = { ...cell.index };
         cell.piece = movingPiece;
@@ -320,19 +361,13 @@ export default function Game({ navigation }: GameProps) {
             if (player.id === 4 && x === 5  && (y < 5 || y > 12)) sideHit = true;
             const backlineHit: Record<number, () => boolean> = {1: () => y <= 0, 2: () => x >= 17, 3: () => y >= 17, 4: () => x <= 0};
             if (backlineHit[player.id]()) cell.piece = new Queen({ x, y }, player); // Promote to queen for now, implement choice later.
-            if (sideHit) cell.piece = new Scout({ x, y }, player);
+            if (sideHit) cell.piece = new Prince({ x, y }, player);
         }
         // Check for king check status
         updateCheckStates(board);
         // Check for checkmate
         for (const player of players) {
             inCheckmate(board, player);
-        }
-        // Clear other pawns' en passant targets
-        if (movingPiece.type === "pawn") {
-            for (const p of movingPiece.getPlayer().pieces) {
-                if (p !== movingPiece && p instanceof Pawn) p.isEnPassantTarget = false;
-            }
         }
         // Update the board state
         setBoard([...board.map(row => [...row])]);
@@ -343,7 +378,11 @@ export default function Game({ navigation }: GameProps) {
         cell.shaded = shouldShade;
         if (!cell?.piece) return;
         const piece = cell.piece;
-        if (piece.type === "dead_king") return;
+        const lastPawn = getLastPawn(piece.getPlayer());
+        const lastNonPawn = getLastNonPawn(piece.getPlayer());
+        if (piece.type !== "pawn" && lastNonPawn) return;
+        if (lastPawn && lastPawn.x === piece.index.x && lastPawn.y === piece.index.y) return;
+        if (piece.type === "king" && (piece as King).dead) return;
         const moves = piece.getRawMoves(localCells);
         const enemies = players.filter(p => p !== piece.getPlayer());
         // Get the current king and see if it's in check
@@ -386,6 +425,29 @@ export default function Game({ navigation }: GameProps) {
         }
     }
 
+    function getLastPawn(player: Player): Coord | null {
+        if (player.moveCount !== 1) return null;
+        const m = player.lastMove;
+        if (!m) return null;
+        const firstChar = m[0];
+        if (firstChar !== firstChar.toLowerCase()) return null;
+        const parts = m.split('-');
+        const dest = parts[1];
+        const file = dest[0];
+        const rank = parseInt(dest.slice(1));
+        const columns = 'abcdefghijklmnopqr';
+        const x = columns.indexOf(file);
+        const y = gridSize - rank;
+        return { x, y };
+    }
+
+    function getLastNonPawn(player: Player): boolean {
+        if (player.moveCount !== 1) return false
+        const m = player.lastMove
+        if (!m) return false
+        return m[0] !== m[0].toLowerCase();
+    }
+
     function updateCheckStates(board: Cells[][]) {
         for (const player of players) {
             const playerPieces = player.getPieces();
@@ -408,7 +470,7 @@ export default function Game({ navigation }: GameProps) {
         let hasEscape = false;
         const enemies = players.filter(p => p !== player || p.isDefeat);
         for (const piece of playerPieces) {
-            if (!piece || piece.type === "dead_king") continue;
+            if (!piece || (piece.type === "king" && (piece as King).dead)) continue;
             piece.onlyChoice = false;
             const moves = piece.getRawMoves(board);
             for (const move of moves) {
@@ -427,7 +489,7 @@ export default function Game({ navigation }: GameProps) {
             const { x, y } = king.index
             const cell = board[y]?.[x]
             if (cell?.piece) {
-                cell.piece.type = "dead_king"
+                (cell.piece as King).dead = true;
                 if (DEBUG_FROZEN_ARMY) {
                     player.isDefeat = true
                 }
@@ -467,7 +529,7 @@ export default function Game({ navigation }: GameProps) {
             for (const cell of row) {
                 const piece = cell?.piece;
                 if (!piece) continue;
-                if (piece.type === "dead_king") continue;
+                if (piece.type === "king" && (piece as King).dead) continue;
                 if (!byPlayers.includes(piece.getPlayer())) continue;
                 const attacks = piece.getRawAttacks(board);
                 if (attacks.some(a => a.x === coord.x && a.y === coord.y)) {
@@ -501,7 +563,7 @@ export default function Game({ navigation }: GameProps) {
         <NavigationProvider navigation={navigation}>
             <View style={[styles.container, { flexDirection: isPortrait ? 'column' : 'row' }]}>
                 <View style={{ width: isPortrait ? '100%' : overlaySize, height: isPortrait ? overlaySize : '100%' }}>
-                    {isPortrait ? <TurnIndicator player={currentPlayer} isPaused={isPaused} setIsPaused={setIsPaused} setSettingsModal={setSettingsModal} /> : <MoveHistory />}
+                    {isPortrait ? <TurnIndicator player={currentPlayer} isPaused={isPaused} showTimer={!DEBUG_TIME_DISABLED} viewRotation={viewRotation} setIsPaused={setIsPaused} setSettingsModal={setSettingsModal} skipTurn={readyNextTurn} /> : <MoveHistory />}
                 </View>
                 <View style={[styles.boardWrapper, { zIndex: 2 }]}>
                     <Zoomable style={hookStyles.board} setPanOrPinchActive={setPanOrPinchActive}>
@@ -513,11 +575,28 @@ export default function Game({ navigation }: GameProps) {
                             </View>
                         ))}
                         <PlayerUI players={players} viewRotation={viewRotation} setViewRotation={setViewRotation} />
+                        <View style={{
+                            position: 'absolute',
+                            left: 8 * cellSize,
+                            top: 8 * cellSize,
+                            width: 2 * cellSize,
+                            height: 2 * cellSize,
+                            borderWidth: cellSize / 8,
+                            borderColor: 'rgba(0, 0, 0, 1)',
+                            zIndex: 11,
+                            pointerEvents: 'none',
+                        }}/>
                     </Zoomable>
                 </View>
                 <View style={{ width: isPortrait ? '100%' : overlaySize, height: isPortrait ? overlaySize : '100%' }}>
-                    {isPortrait ? <MoveHistory /> : <TurnIndicator player={currentPlayer} isPaused={isPaused} setIsPaused={setIsPaused} setSettingsModal={setSettingsModal} />}
+                    {isPortrait ? <MoveHistory /> : <TurnIndicator player={currentPlayer} isPaused={isPaused} showTimer={!DEBUG_TIME_DISABLED} viewRotation={viewRotation} setIsPaused={setIsPaused} setSettingsModal={setSettingsModal} skipTurn={readyNextTurn} />}
                 </View>
+                <Modal visible={isPaused} transparent={true} animationType='none'>
+                    <TouchableWithoutFeedback onPress={() => setIsPaused(false)}>
+                        <View style={{ position: 'absolute', width: visibleWidth, height: usableHeight, zIndex: 4 }} />
+                    </TouchableWithoutFeedback>
+                    <View style={{ width: visibleWidth, height: usableHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 5, pointerEvents: 'box-none' }}/>
+                </Modal>
                 <Modal visible={settingsModal} transparent={true} animationType='none'>
                     <TouchableWithoutFeedback onPress={() => setSettingsModal(false)}>
                         <View style={{ position: 'absolute', width: visibleWidth, height: usableHeight, zIndex: 4 }} />
@@ -526,7 +605,7 @@ export default function Game({ navigation }: GameProps) {
                         <View style={{ width: settingsPanelSize, height: settingsPanelSize, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center', borderRadius: cellSize / 8 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <Checkbox value={isChecked['test']} color={isChecked ? 'grey' : undefined} onValueChange={() => setIsChecked(prev => ({...prev, test: !prev['test']}))} />
-                                <Text adjustsFontSizeToFit={true} style={{ color: 'white', fontFamily: 'ComicSansMS', fontSize: scaleText(12), marginLeft: scaleText(8) }}>Test Checkbox</Text>
+                                <Text adjustsFontSizeToFit={true} numberOfLines={1} style={{ color: 'white', fontFamily: 'ComicSansMS', fontSize: scaleText(12), marginLeft: scaleText(8) }}>Test Checkbox</Text>
                             </View>
                         </View>
                     </View>

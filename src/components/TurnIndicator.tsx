@@ -7,23 +7,30 @@ import SVGLoader from "./SVGLoader";
 interface TurnIndicatorProps {
     player?: Player;
     isPaused: boolean;
+    showTimer: boolean;
+    viewRotation?: number;
     setIsPaused: (paused: boolean) => void;
     setSettingsModal: (visible: boolean) => void;
+    skipTurn: () => void;
 }
 
-export default function TurnIndicator({ player, isPaused, setIsPaused, setSettingsModal }: TurnIndicatorProps) {
+export default function TurnIndicator({ player, isPaused, showTimer, viewRotation, setIsPaused, setSettingsModal, skipTurn }: TurnIndicatorProps) {
     if (!player) return;
+
     const { cellSize, boardSize, overlaySize, isPortrait, scaleText } = useDimensions();
+    const shouldScaleText = overlaySize > 4 * cellSize;
+    const rotation = viewRotation || 0;
+    const rotationFloored = rotation < 180 ? 0 : 180;
 
     const hookStyles = useMemo(() => StyleSheet.create({
-        topRight: {
+        portraitRight: {
             position: 'absolute', 
             top: 0,
             right: 0,
             width: 7 * cellSize,
             height: Math.min(overlaySize, 4 * cellSize),
         },
-        topLeft: {
+        portraitMiddle: {
             position: 'absolute', 
             top: 0,
             left: 0,
@@ -32,52 +39,91 @@ export default function TurnIndicator({ player, isPaused, setIsPaused, setSettin
             alignItems: 'flex-end',
             justifyContent: 'center',
         },
-        rightTop: {
+        portraitLeft: {
+            position: 'absolute', 
+            top: 0,
+            left: 0,
+            width: 7 * cellSize,
+            height: Math.min(overlaySize, 4 * cellSize),
+        },
+        landscapeRight: {
             position: 'absolute', 
             top: 0,
             right: 0,
             width: overlaySize,
-            height: 3 * cellSize,
+            height: 6 * cellSize,
         },
-        rightBottom: {
-            position: 'absolute',
-            bottom: 0,
+        landscapeMiddle: {
             width: overlaySize,
-            height: 15 * cellSize,
-            alignItems: 'center',
-            justifyContent: 'flex-start',
         },
-    }), [boardSize, cellSize, overlaySize]);
+    }), [boardSize, cellSize, overlaySize, isPortrait, scaleText]);
 
     return (
-        <View style={{ justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-            <View style={(isPortrait ? hookStyles.topLeft : hookStyles.rightBottom)}>
-                <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                    <Text adjustsFontSizeToFit={true} style={{ fontSize: scaleText(14), fontFamily: 'ComicSansMS', color: 'black' }}>{player.name}'s Turn</Text>
-                    <Text adjustsFontSizeToFit={true} style={{ fontSize: scaleText(12), fontFamily: 'ComicSansMS', color: 'black' }}>Time Remaining: {player.timeRemaining}</Text>
+        <View style={{ flex: 1, flexDirection: isPortrait ? 'row' : 'column', justifyContent: 'space-evenly', alignItems: 'center' }}>
+            <View style={(isPortrait ? hookStyles.portraitMiddle : hookStyles.landscapeMiddle)}>
+                <View style={{ alignItems: 'center', justifyContent: 'center', marginRight: isPortrait ? cellSize / 2 : 0, padding: isPortrait ? 0 : cellSize, transform: [{ rotate: `${rotationFloored}deg` }] }}>
+                    <Text adjustsFontSizeToFit={true} numberOfLines={1} style={{ fontSize: shouldScaleText ? scaleText(24) : scaleText(16), fontFamily: 'ComicSansMS', color: 'black' }}>{player.name}'s Turn</Text>
+                    {showTimer && <Text adjustsFontSizeToFit={true} numberOfLines={1} style={{ fontSize: shouldScaleText ? scaleText(18) : scaleText(10), fontFamily: 'ComicSansMS', color: 'black' }}>Time Remaining: {player.timeRemaining}</Text>}
                 </View>
             </View>
-            <View style={[(isPortrait ? hookStyles.topRight : hookStyles.rightTop ), styles.buttonContainer]}>
-                <View style={styles.buttonRow}></View>
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity onPress={() => setIsPaused(!isPaused)}>
-                        <View style={styles.button}>
-                            <SVGLoader type="ui" name={isPaused ? "play" : "pause"} scale={isPortrait ? 1 : 1.2}/>
-                        </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setSettingsModal(true)}>
-                        <View style={styles.button}>
-                            <SVGLoader type="ui" name="options" scale={isPortrait ? 1 : 1.2}/>
-                        </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                    <View style={styles.button}>
-                            <SVGLoader type="ui" name="exit" scale={isPortrait ? 1 : 1.2}/>
-                        </View>
-                    </TouchableOpacity>
+            {isPortrait ? (
+                <View style={[hookStyles.portraitRight, styles.buttonContainer]}>
+                    <View style={styles.buttonRow}></View>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity onPress={() => skipTurn()}>
+                            <View style={[styles.button, {transform: [{ rotate: `${rotation}deg` }]}]}>
+                                <SVGLoader type="ui" name="skip" scale={isPortrait ? 1 : 1.2}/>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setIsPaused(!isPaused)}>
+                            <View style={[styles.button, {transform: [{ rotate: `${rotation}deg` }]}]}>
+                                <SVGLoader type="ui" name={isPaused ? "play" : "pause"} scale={isPortrait ? 1 : 1.2}/>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setSettingsModal(true)}>
+                            <View style={[styles.button, {transform: [{ rotate: `${rotation}deg` }]}]}>
+                                <SVGLoader type="ui" name="options" scale={isPortrait ? 1 : 1.2}/>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity>
+                            <View style={[styles.button, {transform: [{ rotate: `${rotation}deg` }]}]}>
+                                <SVGLoader type="ui" name="exit" scale={isPortrait ? 1 : 1.2}/>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.buttonRow}></View>
                 </View>
-                <View style={styles.buttonRow}></View>
-            </View>
+            ) : (
+                <View style={[hookStyles.landscapeRight, styles.buttonContainer]}>
+                    <View style={styles.buttonRow}></View>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity onPress={() => setSettingsModal(true)}>
+                            <View style={styles.button}>
+                                <SVGLoader type="ui" name="options" scale={isPortrait ? 1 : 1.2}/>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity>
+                            <View style={styles.button}>
+                                <SVGLoader type="ui" name="exit" scale={isPortrait ? 1 : 1.2}/>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.buttonRow}></View>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity onPress={() => skipTurn()}>
+                            <View style={styles.button}>
+                                <SVGLoader type="ui" name="skip" scale={isPortrait ? 1 : 1.2}/>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setIsPaused(!isPaused)}>
+                            <View style={styles.button}>
+                                <SVGLoader type="ui" name={isPaused ? "play" : "pause"} scale={isPortrait ? 1 : 1.2}/>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.buttonRow}></View>
+                </View>
+            )}
         </View>
     );
 }

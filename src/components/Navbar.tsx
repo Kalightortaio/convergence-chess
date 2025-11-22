@@ -42,7 +42,7 @@ export default function Navbar({ state, navigation }: BottomTabBarProps) {
                 <View key={tab.name} style={styles.navTab}>
                     <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate(tab.name)}>
                         <SVGLoader type="ui" name={tab.icon} leftColor={isActive ? activeColor : 'white'} style={hookStyles.navSVG}/>
-                        <Text adjustsFontSizeToFit={true} style={[hookStyles.navText, isActive && { color: activeColor }]}>{tab.label}</Text>
+                        <Text adjustsFontSizeToFit={true} numberOfLines={1} style={[hookStyles.navText, isActive && { color: activeColor }]}>{tab.label}</Text>
                     </TouchableOpacity>
                 </View>
                 );

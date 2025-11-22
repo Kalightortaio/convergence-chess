@@ -19,6 +19,7 @@ export class Player { //abstract later
     isDefeat: boolean = false;
     lastMove: string = "";
     timeRemaining: number = TURN_LIMIT;
+    moveCount: number = 0;
 
     constructor(id: number, name: string, title: string, rightColor: string, leftColor: string, photo: ({ uri: string } | number), position: CornerPosition) {
         this.id = id;

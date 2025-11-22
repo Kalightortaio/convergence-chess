@@ -100,7 +100,7 @@ export default function PlayerUI({ players, viewRotation = 0, setViewRotation }:
                                     <View key={piece.type} style={hookStyles.captureSlot}>
                                         <SVGLoader type="symbol" scale={0.75} name={piece.type} leftColor="white" rightColor="white" />
                                         <View style={hookStyles.captureTextContainer}>
-                                            <Text adjustsFontSizeToFit={true} style={hookStyles.captureText}>×{piece.count}</Text>
+                                            <Text adjustsFontSizeToFit={true} numberOfLines={1}style={hookStyles.captureText}>×{piece.count}</Text>
                                         </View>
                                     </View>
                                 )

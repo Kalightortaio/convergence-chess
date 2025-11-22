@@ -12,6 +12,7 @@ export class Bishop extends Piece {
         for (const [dx, dy] of DIAGONAL_DIRECTIONS) {
             moves.push(...this.collectMoves(board, dx, dy));
         }
+        
         return moves;
     }
 }

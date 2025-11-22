@@ -5,9 +5,8 @@ import { Piece } from "./Piece";
 export class Pawn extends Piece {
     type: 'pawn' = 'pawn';
     note: string = '';
-    hasMoved: boolean = false;
-    isEnPassantTarget: boolean = false;
-    enPassantSquare: Coord | null = null;
+    isEnPassantTarget: boolean[] = [];
+    enPassantSquare: (Coord | null)[] = [];
 
     sameCoord(a: Coord | null, b: Coord): boolean {
         return !!a && a.x === b.x && a.y === b.y;
@@ -24,7 +23,7 @@ export class Pawn extends Piece {
         }
 
         const step2 = board[y + fy * 2]?.[x + fx * 2];
-        if (!this.hasMoved && step1 && !step1.piece && step2 && !step2.piece) {
+        if (step1 && !step1.piece && step2 && !step2.piece) {
             moves.push(step2.index);
         }
 
@@ -42,8 +41,12 @@ export class Pawn extends Piece {
             for (const [ox, oy] of ORTHOGONAL_DIRECTIONS) {
                 const adjCell = board[y + oy]?.[x + ox];
                 const adjPawn = adjCell?.piece as Pawn | null;
-                if (adjPawn && adjPawn?.type === "pawn" && adjPawn.getPlayer() !== this.getPlayer() && adjPawn.isEnPassantTarget && this.sameCoord(adjPawn.enPassantSquare, diagonalSquare.index)) {
-                    moves.push(diagonalSquare.index);
+                if (!adjPawn || adjPawn.type !== "pawn" || adjPawn.getPlayer() === this.getPlayer()) continue;
+
+                for (let i = 0; i < adjPawn.isEnPassantTarget.length; i++) {
+                    if (adjPawn.isEnPassantTarget[i] && this.sameCoord(adjPawn.enPassantSquare[i], diagonalSquare.index)) {
+                        moves.push(diagonalSquare.index);
+                    }
                 }
             }
         }

@@ -1,9 +1,9 @@
 export { Piece } from "./Piece";
 export { Pawn } from "./Pawn";
-export { Scout } from "./Scout";
 export { Rook } from "./Rook";
 export { Knight } from "./Knight";
 export { Bishop } from "./Bishop";
+export { Prince } from "./Prince";
+export { Princess } from "./Princess";
 export { Queen } from "./Queen";
 export { King } from "./King";
-export { DeadKing } from "./DeadKing";

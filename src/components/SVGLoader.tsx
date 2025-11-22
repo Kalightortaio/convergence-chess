@@ -1,4 +1,4 @@
-import Svg, { Path, Defs, LinearGradient, Stop, G, Circle } from "react-native-svg";
+import Svg, { Path, Defs, LinearGradient, Stop, G, Circle, Rect, ClipPath } from "react-native-svg";
 import { useZoom } from './ZoomContext'
 
 interface SVGLoaderProps {
@@ -31,6 +31,8 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                         return "0 0 55 55";
                     case 'play':
                         return "0 0 460 460";
+                    case 'skip':
+                        return "0 0 100 100";
                     default:
                         console.warn(`Unknown name '${name}' for type 'ui'`);
                 }
@@ -41,11 +43,12 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                     case 'alarm':
                         return "0 0 24 24";
                     case 'pawn':
-                    case 'scout':
+                    case 'prince':
                     case 'rook':
                     case 'knight':
                     case 'king':
                     case 'bishop':
+                    case 'princess':
                     case 'queen':
                     case 'dead_king':
                         return "0 0 50 50";
@@ -106,6 +109,12 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                                 <Path d="M393.538,203.629L102.557,5.543c-9.793-6.666-22.468-7.372-32.94-1.832c-10.472,5.538-17.022,16.413-17.022,28.26v396.173 c0,11.846,6.55,22.721,17.022,28.26c10.471,5.539,23.147,4.834,32.94-1.832l290.981-198.087 c8.746-5.954,13.98-15.848,13.98-26.428C407.519,219.477,402.285,209.582,393.538,203.629z" />
                             </G>
                         );
+                    case 'skip':
+                        return (
+                            <G>
+                                <Path d="M88.765,77.291v-54.72c0-0.002,0.001-0.003,0.001-0.005s-0.001-0.004-0.001-0.005v-0.235h-0.024 c-0.123-1.286-1.194-2.296-2.513-2.296c-0.03,0-0.058,0.008-0.087,0.009h-4.569c-0.071-0.006-0.14-0.021-0.213-0.021 c-1.4,0-2.537,1.136-2.537,2.537c0,0.117,0.019,0.23,0.035,0.343v23.141l-33.341-19.25c-0.31-0.307-0.736-0.497-1.207-0.497 c-0.932,0-1.686,0.743-1.713,1.669H42.59v15.249L14.148,26.788c-0.31-0.307-0.736-0.497-1.207-0.497 c-0.932,0-1.687,0.743-1.713,1.669h-0.005v44.031c0,0.949,0.77,1.718,1.718,1.718c0.483,0,0.918-0.2,1.23-0.521L42.59,56.78v15.212 c0,0.949,0.769,1.718,1.718,1.718c0.483,0,0.918-0.2,1.23-0.521l33.319-19.237v23.382h0.013c-0.002,0.039-0.012,0.075-0.012,0.114 c0,1.399,1.134,2.533,2.532,2.536v0h4.852v-0.024c1.401,0,2.537-1.136,2.537-2.537C88.778,77.377,88.767,77.335,88.765,77.291z" />
+                            </G>
+                        );    
                     default:
                         console.warn(`Unknown name '${name}' for type 'ui'`);
                         return (
@@ -155,7 +164,7 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                                 <Path fill="#fff" d="M23.75 13.4a11 11 0 0 0-3.48 6.19s-1.16-4.23 3.48-6.19M14.24 43.42c.28-5.32 2.57-6.18 7.54-11.44-1.03 3.57-7.39 5.87-7.54 11.44"/>
                             </G>
                         );
-                    case 'scout':
+                    case 'prince':
                         return (
                             <G>
                                 <Defs>
@@ -163,15 +172,49 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                                         <Stop offset={0} stopColor={leftColor} />
                                         <Stop offset={1} stopColor={rightColor} />
                                     </LinearGradient>
-                                    <LinearGradient id="b" x1={-464.54} x2={-434.16} y1={-452.1} y2={-452.1} gradientTransform="translate(474.35 493.34)" gradientUnits="userSpaceOnUse">
+                                    <LinearGradient id="a-0" x1={-825.75} x2={-704.44} y1={2712.8} y2={2712.8} gradientTransform="matrix(0.265,0,0,0.254,227.43,-666.55)" gradientUnits="userSpaceOnUse">
                                         <Stop offset={0} stopColor={leftColor} />
                                         <Stop offset={1} stopColor={rightColor} />
                                     </LinearGradient>
+                                    <LinearGradient id="b" x1={-215.24} x2={-184.86} y1={731.78} y2={731.78} gradientTransform="translate(225.05,-690.53)" gradientUnits="userSpaceOnUse">
+                                        <Stop offset={0} stopColor={leftColor} />
+                                        <Stop offset={1} stopColor={rightColor} />
+                                    </LinearGradient>
+
+                                    <ClipPath id="clipPath26">
+                                        <Rect id="rect27" width={19.957443} height={15.617021} x={15.309226} y={2.439255} fill="none" />
+                                    </ClipPath>
+
+                                    <ClipPath id="clipPath33">
+                                        <Path id="lpe_path-effect35" fill="none" strokeWidth={1.03668} d="M 9.24,8.4 H 28.75 V 48.42 H 9.24 Z m 6.812828,2.417229 V 21.86013 H 33.745543 V 10.817229 Z" />
+                                    </ClipPath>
+
+                                    <ClipPath id="clipPath34">
+                                        <Path id="lpe_path-effect36" fill="none" strokeWidth={1.03668} d="M 15.74,7.26 H 42.318601 V 49.18 H 15.74 Z m 0.312828,3.557229 V 21.86013 H 33.745543 V 10.817229 Z" />
+                                    </ClipPath>
+
+                                    <ClipPath id="clipPath35">
+                                        <Path id="lpe_path-effect37" fill="none" strokeWidth={1.03668} d="M 6.9293542,6.46 H 43.061573 V 49.98 H 6.9293542 Z m 9.1234738,4.357229 V 21.86013 H 33.745543 V 10.817229 Z" />
+                                    </ClipPath>
                                 </Defs>
-                                <Path fill="url(#a)" stroke="#000" strokeLinejoin="round" strokeWidth={1.6} d="M25 6.26c-3.56 0-6.45 2.66-6.45 5.93 0 1.7.8 3.33 2.2 4.45h-1.67c-1.31 0-2.4.98-2.4 2.16v.44c0 1.18 1.09 2.16 2.4 2.16h2.37c0 7.29-9.34 6.45-8.69 16.78L25 38.17h12.24c.65-10.32-8.7-9.48-8.7-16.77h2.38c1.32 0 2.4-.98 2.4-2.16v-.44c0-1.18-1.08-2.16-2.4-2.16h-1.66a5.7 5.7 0 0 0 2.19-4.45c0-3.27-2.89-5.93-6.45-5.93z"/>
-                                <Path d="M25 6.26a7 7 0 0 0-1.51.17c6.25.7 7.67 6.47 4.91 9.22-2.01 1.7-7.66 1-7.66 1 2.56.44 4.97 1.95 7.25 2.48-6.03 11.44 9.7 9.03 9.24 19.05 1-10.6-7.67-8.15-8.68-16.78h2.37c1.31 0 2.4-.98 2.4-2.16v-.44c0-1.18-1.09-2.16-2.4-2.16h-1.66a5.7 5.7 0 0 0 2.19-4.44c0-3.28-2.89-5.94-6.45-5.94" opacity={0.15}/>
-                                <Path fill="#fff" d="M23.75 7.4a11 11 0 0 0-3.48 6.2s-1.16-4.24 3.48-6.2m-9.62 30.02c.27-5.32 2.57-6.18 7.54-11.43-1.03 3.56-7.39 5.86-7.54 11.43"/>
-                                <Path fill="url(#b)" stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M13.24 38.29a2.7 2.7 0 0 0-2.63 2.68v.55l.02 2.68h28.74l.02-2.68v-.55a2.7 2.7 0 0 0-2.63-2.68H25z"/>
+
+                                <G>
+                                    <Path fill="url(#a)" stroke="#000" strokeLinejoin="round" strokeWidth={1.6} d="m 25,12.26 c -3.56,0 -6.45,2.66 -6.45,5.93 0,1.7 0.8,3.33 2.2,4.45 h -1.67 c -1.32,0 -2.4,0.98 -2.4,2.16 v 0.44 c 0,1.18 1.08,2.16 2.4,2.16 h 2.37 c 0,7.29 -9.34,6.45 -8.69,16.78 L 25,44.17 H 37.23 C 37.89,33.85 28.55,34.69 28.55,27.4 h 2.37 c 1.31,0 2.4,-0.98 2.4,-2.16 V 24.8 c 0,-1.18 -1.09,-2.16 -2.4,-2.16 h -1.66 a 5.7,5.7 0 0 0 2.19,-4.45 c 0,-3.27 -2.89,-5.93 -6.45,-5.93 z" clipPath="url(#clipPath35)" />
+                                    <Path d="m 25,12.26 a 7,7 0 0 0 -1.51,0.17 c 6.25,0.7 7.67,6.47 4.91,9.22 -2.01,1.7 -7.66,1 -7.66,1 2.56,0.44 4.97,1.95 7.25,2.48 -6.03,11.44 9.7,9.03 9.25,19.05 0.99,-10.6 -7.68,-8.15 -8.7,-16.78 h 2.38 c 1.32,0 2.4,-0.98 2.4,-2.16 V 24.8 c 0,-1.18 -1.08,-2.16 -2.4,-2.16 h -1.66 a 5.7,5.7 0 0 0 2.19,-4.45 c 0,-3.27 -2.89,-5.93 -6.45,-5.93" opacity={0.15} clipPath="url(#clipPath34)" />
+                                    <Path fill="#fff" d="m 23.75,13.4 a 11,11 0 0 0 -3.48,6.19 c 0,0 -1.16,-4.23 3.48,-6.19 m -9.51,30.02 c 0.28,-5.32 2.57,-6.18 7.54,-11.44 -1.03,3.57 -7.39,5.87 -7.54,11.44" clipPath="url(#clipPath33)" />
+                                    <Rect width={11.428749} height={1.569067} x={18.95648} y={21.860132} fill="#000" strokeWidth={1.01796} />
+
+                                    <G transform="translate(-0.0510162,5.3803722)" clipPath="url(#clipPath26)">
+                                        <Path fill="url(#a-0)" stroke="#000" strokeLinejoin="round" strokeWidth={1.6} d="m 25,3.87 c -1.8,0.1 -3.22,1.23 -3.22,2.62 0,0.56 0.24,1.64 0.7,2.1 H 16.7 v 5.1 H 23 l -2.6,2.83 2.66,2.17 c -5.58,0.36 -12.02,1.64 -13.15,4 -1.27,2.63 6.22,15.6 6.22,15.6 h 17.73 c 0,0 7.48,-12.97 6.21,-15.6 -1.13,-2.36 -7.6,-3.64 -13.18,-4 L 29.6,16.52 27,13.69 h 6.3 v -5.1 h -5.77 c 0.45,-0.46 0.7,-1.54 0.7,-2.1 C 28.23,5.1 26.8,3.97 25,3.87 Z" />
+                                        <Path opacity={0.1} d="m 31.29,38.28 h 2.57 c 0,0 7.48,-12.43 6.22,-15.07 C 35.94,19.4 26.9,18.7 26.9,18.7 c 11.05,2.82 12.61,5.03 4.39,19.6" />
+                                        <Path fill="url(#b)" stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="m 13.24,38.29 a 2.67,2.67 0 0 0 -2.62,2.68 V 44.2 H 39.38 V 40.97 A 2.67,2.67 0 0 0 36.76,38.29 H 25 Z" />
+                                        <G fill="#fff">
+                                        <Path d="m 15.28,31.14 c 0,0 -3.07,-6.56 -2.66,-8.1 0.4,-1.53 5.98,-2.73 5.98,-2.73 -6.48,2.71 -4.78,4.56 -3.32,10.83" />
+                                        <Path d="M 17.52,12.88 V 9.36 h 1.53 c -0.89,0 -1.53,2.14 -1.53,3.52" />
+                                        <Path d="m 24.8,4.67 c 0,0 -2.62,0.92 -1.53,3.52 -0.18,0 -2.14,-2.72 1.53,-3.52" />
+                                        </G>
+                                    </G>
+                                </G>
                             </G>
                         )
                     case 'rook':
@@ -254,6 +297,95 @@ export default function SVGLoader({ type, name, rightColor = "grey", leftColor =
                                 </G>
                             </G>
                         );
+                    case 'princess':
+                        return (
+                            <G>
+                                <Defs>
+                                    <LinearGradient id="a" x1={-639.4} x2={-612.91} y1={-465.15} y2={-465.15} gradientTransform="matrix(.943 0 0 1 615.66 493.37)" gradientUnits="userSpaceOnUse">
+                                        <Stop offset={0} stopColor={leftColor} />
+                                        <Stop offset={1} stopColor={rightColor} />
+                                    </LinearGradient>
+                                    <ClipPath id="clipPath10">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 15.74,7.26 H 42.318601 V 49.18 H 15.74 Z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath11">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 9.24,8.4 H 28.75 V 48.42 H 9.24 Z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath12">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 6.9293542,6.46 H 43.061573 V 49.98 H 6.9293542 Z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath12-4">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 6.9293542,6.46 H 43.061573 V 49.98 H 6.9293542 Z m 8.3897948,15.327233 v 6.500001 h 20.127659 v -6.500001 z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath11-4">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 9.24,8.4 H 28.75 V 48.42 H 9.24 Z m 6.079149,13.387233 v 6.500001 h 20.127659 v -6.500001 z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath10-7">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 15.74,7.26 H 42.318601 V 49.18 H 15.74 Z m -0.420851,14.527233 v 6.500001 h 20.127659 v -6.500001 z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipath_lpe_path-effect14-2">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 6.9293542,6.46 H 43.061573 V 49.98 H 6.9293542 Z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipath_lpe_path-effect13-1">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 9.24,8.4 H 28.75 V 48.42 H 9.24 Z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipath_lpe_path-effect12-5">
+                                        <Path fill="#000000" strokeWidth={0.947908} d="M 15.74,7.26 H 42.318601 V 49.18 H 15.74 Z" />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath17">
+                                        <Rect fill="#000000" width={17.702127} height={11.617022} x={16.234043} y={10.276596} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath18">
+                                        <Rect fill="#000000" width={17.702127} height={11.617022} x={16.234043} y={10.276596} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath19">
+                                        <Rect fill="#000000" width={17.702127} height={11.617022} x={16.234043} y={10.276596} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath21">
+                                        <Rect fill="#000000" width={18.468084} height={11.765958} x={15.808511} y={10.063829} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath22">
+                                        <Rect fill="#000000" width={18.468084} height={11.765958} x={15.808511} y={10.063829} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath23">
+                                        <Rect fill="#000000" width={18.468084} height={11.765958} x={15.808511} y={10.063829} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath35">
+                                        <Rect fill="#000000" strokeWidth={0.981938} width={30.765957} height={17.765957} x={10.461268} y={28.225956} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath36">
+                                        <Rect fill="#000000" strokeWidth={0.981938} width={30.765957} height={17.765957} x={10.461268} y={28.225956} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath37">
+                                        <Rect fill="#000000" strokeWidth={0.981938} width={30.765957} height={17.765957} x={10.461268} y={28.225956} />
+                                    </ClipPath>
+                                    <ClipPath id="clipPath38">
+                                        <Path fill="#808080" d="M 0.90999999,0.3197305 H 49.11 V 44.08 H 0.90999999 Z M 18.01,2.1385887 V 19.457738 h 14 V 2.1385887 Z" />
+                                    </ClipPath>
+                                </Defs>
+                                <G transform="translate(-0.04255319,5.2765957)">
+                                    <G transform="translate(0.03255319,0.49970915)" clipPath="url(#clipPath38)">
+                                        <Path fill="url(#a)" stroke="#000000" strokeLinejoin="round" strokeWidth={1.6} d="m 25,6.12 a 4.73,4.73 0 0 0 -4.77,4.69 4.7,4.7 0 0 0 2.85,4.28 c -0.37,2.29 -1.51,7.56 -4.68,8 -2.36,0.34 -3.86,-1.28 -4.88,-3.14 a 4.2,4.2 0 0 0 1.76,-3.4 4.25,4.25 0 0 0 -4.28,-4.2 4.25,4.25 0 0 0 -4.29,4.2 4.24,4.24 0 0 0 3.8,4.19 l 4.98,17.54 H 34.53 L 39.5,20.74 a 4.24,4.24 0 0 0 3.81,-4.19 4.25,4.25 0 0 0 -4.3,-4.2 4.25,4.25 0 0 0 -4.28,4.2 c 0,1.35 0.66,2.61 1.76,3.4 -1.02,1.86 -2.52,3.48 -4.88,3.15 -3.17,-0.45 -4.3,-5.72 -4.68,-8.01 A 4.7,4.7 0 0 0 29.78,10.81 4.73,4.73 0 0 0 25,6.12 Z"/>
+                                        <Path opacity={0.1} d="m 39,12.34 q -0.81,0 -1.56,0.3 c 4.74,1.68 3.87,6.8 0.59,7.31 L 30.4,38.28 h 4.2 l 4.87,-17.54 a 4.24,4.24 0 0 0 3.81,-4.19 4.25,4.25 0 0 0 -4.29,-4.2"/>
+                                        <G fill="#ffffff">
+                                            <Path d="m 10.52,13.49 c -0.8,1.17 -1.73,2.67 -1.56,4.78 0,0 -1.6,-3.01 1.56,-4.78" />
+                                            <Path d="M 24.66,7.23 C 23.81,8.1 22.29,10.16 22.53,12.6 22.32,12.52 20.8,8.71 24.66,7.23" />
+                                            <Path d="m 13.06,23.33 5.25,14.1 -1.17,0.03 z" />
+                                        </G>
+                                    </G>
+                                </G>
+                                <G transform="translate(0.28341196,-0.11957447)">
+                                    <Path fill="url(#a)" stroke="#000000" strokeLinejoin="round" strokeWidth={1.6} clipPath="url(#clipPath37)" d="m 25,12.26 c -3.56,0 -6.45,2.66 -6.45,5.93 0,1.7 0.8,3.33 2.2,4.45 h -1.67 c -1.32,0 -2.4,0.98 -2.4,2.16 v 0.44 c 0,1.18 1.08,2.16 2.4,2.16 h 2.37 c 0,7.29 -9.34,6.45 -8.69,16.78 L 25,44.17 H 37.23 C 37.89,33.85 28.55,34.69 28.55,27.4 h 2.37 c 1.31,0 2.4,-0.98 2.4,-2.16 V 24.8 c 0,-1.18 -1.09,-2.16 -2.4,-2.16 h -1.66 a 5.7,5.7 0 0 0 2.19,-4.45 c 0,-3.27 -2.89,-5.93 -6.45,-5.93 z"/>
+                                    <Path fill="#ffffff" clipPath="url(#clipPath36)" d="m 23.75,13.4 a 11,11 0 0 0 -3.48,6.19 c 0,0 -1.16,-4.23 3.48,-6.19 m -9.51,30.02 c 0.28,-5.32 2.57,-6.18 7.54,-11.44 -1.03,3.57 -7.39,5.87 -7.54,11.44"/>
+                                    <Path opacity={0.15} clipPath="url(#clipPath35)" transform="matrix(0.79465967,0,0,1,6.9821627,0.89361702)" d="m 25,12.26 a 7,7 0 0 0 -1.51,0.17 c 6.25,0.7 7.67,6.47 4.91,9.22 -2.01,1.7 -7.66,1 -7.66,1 2.56,0.44 4.97,1.95 7.25,2.48 -6.03,11.44 9.7,9.03 9.25,19.05 0.99,-10.6 -7.68,-8.15 -8.7,-16.78 h 2.38 c 1.32,0 2.4,-0.98 2.4,-2.16 V 24.8 c 0,-1.18 -1.08,-2.16 -2.4,-2.16 h -1.66 a 5.7,5.7 0 0 0 2.19,-4.45 c 0,-3.27 -2.89,-5.93 -6.45,-5.93"/>
+                                </G>
+                                <G transform="matrix(1,0,0,1.0072542,0.26778269,9.5533491)">
+                                    <Path fill="url(#a)" stroke="#000000" strokeLinejoin="round" strokeWidth={1.6} clipPath="url(#clipPath23)" d="m 25,12.26 c -3.56,0 -6.45,2.66 -6.45,5.93 0,1.7 0.8,3.33 2.2,4.45 h -1.67 c -1.32,0 -2.4,0.98 -2.4,2.16 v 0.44 c 0,1.18 1.08,2.16 2.4,2.16 h 2.37 c 0,7.29 -9.34,6.45 -8.69,16.78 L 25,44.17 H 37.23 C 37.89,33.85 28.55,34.69 28.55,27.4 h 2.37 c 1.31,0 2.4,-0.98 2.4,-2.16 V 24.8 c 0,-1.18 -1.09,-2.16 -2.4,-2.16 h -1.66 a 5.7,5.7 0 0 0 2.19,-4.45 c 0,-3.27 -2.89,-5.93 -6.45,-5.93 z"/>
+                                    <Path fill="#ffffff" clipPath="url(#clipPath22)" d="m 23.75,13.4 a 11,11 0 0 0 -3.48,6.19 c 0,0 -1.16,-4.23 3.48,-6.19 m -9.51,30.02 c 0.28,-5.32 2.57,-6.18 7.54,-11.44 -1.03,3.57 -7.39,5.87 -7.54,11.44"/>
+                                    <Path opacity={0.15} clipPath="url(#clipPath21)" d="m 25,12.26 a 7,7 0 0 0 -1.51,0.17 c 6.25,0.7 7.67,6.47 4.91,9.22 -2.01,1.7 -7.66,1 -7.66,1 2.56,0.44 4.97,1.95 7.25,2.48 -6.03,11.44 9.7,9.03 9.25,19.05 0.99,-10.6 -7.68,-8.15 -8.7,-16.78 h 2.38 c 1.32,0 2.4,-0.98 2.4,-2.16 V 24.8 c 0,-1.18 -1.08,-2.16 -2.4,-2.16 h -1.66 a 5.7,5.7 0 0 0 2.19,-4.45 c 0,-3.27 -2.89,-5.93 -6.45,-5.93"/>
+                                </G>
+                            </G>
+                        )
                     case 'king':
                         return (
                             <G>

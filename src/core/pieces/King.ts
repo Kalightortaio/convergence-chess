@@ -9,6 +9,7 @@ export class King extends Piece {
     hasMoved: boolean = false;
     shouldCastle : boolean = false;
     checked: boolean = false;
+    dead: boolean = false;
 
     getRawMoves(board: Cells[][]): Coord[] {
         const moves: Coord[] = [];
