@@ -20,8 +20,9 @@ export class Player { //abstract later
     lastMove: string = "";
     timeRemaining: number = TURN_LIMIT;
     moveCount: number = 0;
+    isCPU: boolean;
 
-    constructor(id: number, name: string, title: string, rightColor: string, leftColor: string, photo: ({ uri: string } | number), position: CornerPosition) {
+    constructor(id: number, name: string, title: string, rightColor: string, leftColor: string, photo: ({ uri: string } | number), position: CornerPosition, isCPU: boolean = false) {
         this.id = id;
         this.name = name;
         this.title = title;
@@ -32,6 +33,7 @@ export class Player { //abstract later
         this.botColor = this.blendColors(this.middleColor, rightColor);
         this.photo = photo;
         this.position = position;
+        this.isCPU = isCPU;
     }
 
     getPieces(): Piece[] {

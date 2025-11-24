@@ -6,7 +6,7 @@ export class Rook extends Piece {
     type: 'rook' = 'rook';
     note: string = 'R';
     hasMoved: boolean = false;
-    shouldCastle : boolean = false;
+    canCastle : boolean = false;
 
     getRawMoves(board: Cells[][]): Coord[] {
         const moves: Coord[] = [];

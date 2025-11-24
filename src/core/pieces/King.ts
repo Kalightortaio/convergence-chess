@@ -7,7 +7,6 @@ export class King extends Piece {
     type: 'king' = 'king';
     note: string = 'K';
     hasMoved: boolean = false;
-    shouldCastle : boolean = false;
     checked: boolean = false;
     dead: boolean = false;
 

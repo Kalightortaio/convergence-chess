@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Modal, TouchableWithoutFeedback, Text } from 'react-native';
 import { Cells, CellStateProps, Coord, Pieces, RootStackParamList } from '../Types';
-import { PAWN_FORWARD, TURN_LIMIT } from '../Constants';
+import { PAWN_FORWARD, PIECE_POINTS, TURN_LIMIT } from '../Constants';
 import Zoomable from '../components/Zoomable';
 import Cell from '../components/Cell';
 import { throttle } from 'lodash';
-import { Pawn, Prince, Rook, Knight, Bishop, Queen, King, Princess } from "../core/pieces";
+import { Pawn, Prince, Rook, Knight, Bishop, Queen, King, Princess, Piece } from "../core/pieces";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { NavigationProvider } from '../components/NavigationProvider';
 import PlayerUI from '../components/PlayerUI';
@@ -24,16 +24,17 @@ export default function Game({ navigation }: GameProps) {
     // Temp until Lobby is made
     // Todo: Allow players to choose their colors in the lobby. Names and profile pics should be fetched from their profiles, and can be changed on the fly.
     const [players, setPlayers] = useState<Player[]>(() => [
-        new Player(1, "Red", "Novice", "#800000", "#FF0000", {uri: "https://randomuser.me/api/portraits/men/42.jpg"}, "botRight"),
-        new Player(2, "Blue", "Adept", "#0000FF", "#87CEEB", {uri: "https://randomuser.me/api/portraits/women/0.jpg"}, "botLeft"),
-        new Player(3, "Green", "Comeback Kid", "#006400", "#00FF7F", {uri: "https://randomuser.me/api/portraits/men/16.jpg"}, "topLeft"),
-        new Player(4, "Purple", "Grandmaster", "#670bb8ff", "#d900ffff", {uri: "https://randomuser.me/api/portraits/women/7.jpg"}, "topRight"),
+        new Player(1, "Red", "Novice", "#800000", "#FF0000", {uri: "https://randomuser.me/api/portraits/men/42.jpg"}, "botRight", true),
+        new Player(2, "Blue", "Adept", "#0000FF", "#87CEEB", {uri: "https://randomuser.me/api/portraits/women/0.jpg"}, "botLeft", true),
+        new Player(3, "Green", "Comeback Kid", "#006400", "#00FF7F", {uri: "https://randomuser.me/api/portraits/men/16.jpg"}, "topLeft", true),
+        new Player(4, "Purple", "Grandmaster", "#670bb8ff", "#d900ffff", {uri: "https://randomuser.me/api/portraits/women/7.jpg"}, "topRight", true),
     ]);
 
     const [turn, setTurn] = useState<number>(1);
     const [board, setBoard] = useState<Cells[][]>(() => initBoard());
     const [isPanOrPinchActive, setPanOrPinchActive] = useState(false);
     const [lastSelected, setLastSelected] = useState<CellStateProps | null>(null);
+    const [CPUMove, setCPUMove] = useState<CellStateProps | null>(null);
     const [viewRotation, setViewRotation] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     const [settingsModal, setSettingsModal] = useState(false);
@@ -41,7 +42,7 @@ export default function Game({ navigation }: GameProps) {
     const DEBUG_FROZEN_ARMY = true; // When your checkmated, you lose control of your pieces but they remain on the board. Will eventually be a lobby feature.
     const DEBUG_IGNORE_TURNS = false; // For testing purposes only, allows moving any piece at any time.
     const DEBUG_TIME_DISABLED = true; // Disables the timer for testing purposes, eventually to be a lobby feature.
-    const DEBUG_AUTO_ROTATE = true; // Automatically rotates the view to the current player at the start of their turn.
+    const DEBUG_AUTO_ROTATE = false; // Automatically rotates the view to the current player at the start of their turn.
     const currentPlayer = players.find(p => p.id === turn);
 
     function initBoard(): Cells[][] {
@@ -67,8 +68,7 @@ export default function Game({ navigation }: GameProps) {
     function getStartingPieces(row: number, col: number): Pieces {
         const layouts = {
             front: Array(8).fill('pawn'),
-            middleFront: Array(8).fill('pawn'),
-            middleBack: ['prince', 'prince', 'prince', 'princess', 'princess', 'prince', 'prince', 'prince'],
+            middle: ['prince', 'prince', 'prince', 'princess', 'princess', 'prince', 'prince', 'prince'],
             back: ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'],
         } as const;
 
@@ -92,21 +92,17 @@ export default function Game({ navigation }: GameProps) {
         }
 
         const p1 = players[0], p2 = players[1], p3 = players[2], p4 = players[3];
-        if (row === 14) return pickPiece(col, p1, 'front');
-        if (row === 15) return pickPiece(col, p1, 'middleFront');
-        if (row === 16) return pickPiece(col, p1, 'middleBack', true);
+        if (row === 15) return pickPiece(col, p1, 'front');
+        if (row === 16) return pickPiece(col, p1, 'middle');
         if (row === 17) return pickPiece(col, p1, 'back');
-        if (col === 3)  return pickPiece(row, p2, 'front');
-        if (col === 2)  return pickPiece(row, p2, 'middleFront');
-        if (col === 1)  return pickPiece(row, p2, 'middleBack', true);
+        if (col === 2)  return pickPiece(row, p2, 'front');
+        if (col === 1)  return pickPiece(row, p2, 'middle');
         if (col === 0)  return pickPiece(row, p2, 'back');
-        if (row === 3)  return pickPiece(col, p3, 'front');
-        if (row === 2)  return pickPiece(col, p3, 'middleFront');
-        if (row === 1)  return pickPiece(col, p3, 'middleBack', true);
+        if (row === 2)  return pickPiece(col, p3, 'front');
+        if (row === 1)  return pickPiece(col, p3, 'middle');
         if (row === 0)  return pickPiece(col, p3, 'back', true);
-        if (col === 14) return pickPiece(row, p4, 'front');
-        if (col === 15) return pickPiece(row, p4, 'middleFront');
-        if (col === 16) return pickPiece(row, p4, 'middleBack', true);
+        if (col === 15) return pickPiece(row, p4, 'front');
+        if (col === 16) return pickPiece(row, p4, 'middle');
         if (col === 17) return pickPiece(row, p4, 'back', true);
 
         return null;
@@ -152,6 +148,87 @@ export default function Game({ navigation }: GameProps) {
         return () => clearInterval(timer);
     }, [turn, isPaused]);
 
+    useEffect(() => {
+        if (isPaused) return;
+        const player = players.find(p => p.id === turn);
+        if (!player || !player.isCPU) return;
+        const timer = setTimeout(() => {
+            const legalMoves = getAIMoves(player);
+            const chosen = pickAIMove(legalMoves);
+            if (!chosen) {
+                readyNextTurn();
+                console.warn("Error: AI could not find a valid move");
+                return;
+            }
+            const toCell = board[chosen.to.y][chosen.to.x];
+            const fromCell = board[chosen.from.y][chosen.from.x];
+            if (!toCell || !fromCell) return;
+            setLastSelected(fromCell);
+            setCPUMove(toCell);
+        }, 1);
+
+        return () => clearTimeout(timer);
+    }, [turn, isPaused]);
+
+    useEffect(() => {
+        if (!CPUMove || !lastSelected) return;
+        const movingPiece = lastSelected.piece;
+        if (!movingPiece) {
+            setCPUMove(null);
+            setLastSelected(null);
+            return;
+        }
+        const player = movingPiece.getPlayer();
+        doMove(CPUMove);
+        const moveCount = player.moveCount;
+        if (DEBUG_IGNORE_TURNS || !player.isCPU) {
+            readyNextTurn();
+            return;
+        }
+        if (moveCount === 1) {
+            const hasPawns = player.getPieces().some(p => p && p.type === "pawn");
+            if (!hasPawns) {
+                readyNextTurn();
+                return;
+            }
+            const pawnMoves = getAIMoves(player).filter(m => m.piece && m.piece.type === "pawn");
+            if (pawnMoves.length === 0) {
+                readyNextTurn();
+                return;
+            }
+            let bestScore = -Infinity;
+            let best: LegalMove[] = [];
+            for (const m of pawnMoves) {
+                const s = evaluateAIMove(m);
+                if (s > bestScore) {
+                    bestScore = s;
+                    best = [m];
+                } else if (s === bestScore) {
+                    best.push(m);
+                }
+            }
+            if (bestScore <= 0) {
+                readyNextTurn();
+                return;
+            }
+            const second = best[Math.floor(Math.random() * best.length)];
+            const from2 = board[second.from.y]?.[second.from.x];
+            const to2   = board[second.to.y]?.[second.to.x];
+            if (!from2 || !to2) {
+                readyNextTurn();
+                return;
+            }
+
+            setLastSelected(from2);
+            setCPUMove(to2);
+            return;
+        }
+
+        if (moveCount >= 2) {
+            readyNextTurn();
+        }
+    }, [CPUMove, lastSelected]);
+
     function readyNextTurn() {
         let nextTurn = (turn % 4) + 1;
         if (DEBUG_FROZEN_ARMY) {
@@ -166,6 +243,7 @@ export default function Game({ navigation }: GameProps) {
             const current = updated.find(p => p.id === turn);
             if (current) current.timeRemaining = TURN_LIMIT;
             if (current) current.moveCount = 0;
+            setCPUMove(null);
             return updated;
         });
 
@@ -247,7 +325,7 @@ export default function Game({ navigation }: GameProps) {
         const player = movingPiece.getPlayer();
         const enemyPlayer = targetPiece?.getPlayer();
         // Block moves that capture a king
-        if (targetPiece && targetPiece.type === "king") return;
+        if (targetPiece && targetPiece.type === "king" && !(targetPiece as King).dead) return;
         const from = lastSelected.index;
         const to = cell.index;
         const dx = to.x - from.x;
@@ -415,9 +493,6 @@ export default function Game({ navigation }: GameProps) {
                 const isCastleMove = dx === 2 || dy === 2;
                 if (isCastleMove) {
                     targetCell.shaded = shouldShade;
-                    (piece as King).shouldCastle = true;
-                } else {
-                    targetCell.shaded = shouldShade;
                 }
                 continue;
             }
@@ -431,11 +506,18 @@ export default function Game({ navigation }: GameProps) {
         if (!m) return null;
         const firstChar = m[0];
         if (firstChar !== firstChar.toLowerCase()) return null;
-        const parts = m.split('-');
-        const dest = parts[1];
-        const file = dest[0];
-        const rank = parseInt(dest.slice(1));
         const columns = 'abcdefghijklmnopqr';
+        let destPart: string | null = null;
+        if (m.includes('x')) {
+            const parts = m.split('x');
+            if (parts.length === 2) destPart = parts[1];
+        } else if (m.includes('-')) {
+            const parts = m.split('-');
+            if (parts.length === 2) destPart = parts[1];
+        }
+        if (!destPart) return null;
+        const file = destPart[0];
+        const rank = parseInt(destPart.slice(1));
         const x = columns.indexOf(file);
         const y = gridSize - rank;
         return { x, y };
@@ -451,9 +533,9 @@ export default function Game({ navigation }: GameProps) {
     function updateCheckStates(board: Cells[][]) {
         for (const player of players) {
             const playerPieces = player.getPieces();
-            const king = playerPieces.find(p => p && p.type === "king") as King | undefined;
+            const king = playerPieces.find(p => p && p.type === "king" && !(p as King).dead) as King | undefined;
             if (!king) continue;
-            const enemies = players.filter(p => p !== player);
+            const enemies = players.filter(p => p !== player && !p.isDefeat);
             const inCheck = isCellAttackable(board, king.index, enemies);
             if (!inCheck) {
                 playerPieces.forEach(p => p.onlyChoice = false);
@@ -468,7 +550,7 @@ export default function Game({ navigation }: GameProps) {
         if (!king) return;
         if (!king.checked) return;
         let hasEscape = false;
-        const enemies = players.filter(p => p !== player || p.isDefeat);
+        const enemies = players.filter(p => p !== player && !p.isDefeat);
         for (const piece of playerPieces) {
             if (!piece || (piece.type === "king" && (piece as King).dead)) continue;
             piece.onlyChoice = false;
@@ -490,6 +572,7 @@ export default function Game({ navigation }: GameProps) {
             const cell = board[y]?.[x]
             if (cell?.piece) {
                 (cell.piece as King).dead = true;
+                (cell.piece as King).checked = false;
                 if (DEBUG_FROZEN_ARMY) {
                     player.isDefeat = true
                 }
@@ -500,16 +583,54 @@ export default function Game({ navigation }: GameProps) {
 
     function simulateMove(board: Cells[][], piece: Pieces, move: Coord): Cells[][] {
         if (!piece) return board;
-        const clone = board.map(row => row.map(cell => cell ? { ...cell, piece: cell.piece ? Object.assign(Object.create(Object.getPrototypeOf(cell.piece)), cell.piece) : null}: null));
+
+        const clone = board.map((row, y) => row.map((cell, x) => cell ? { ...cell, piece: cell.piece ? Object.assign(Object.create(Object.getPrototypeOf(cell.piece)), cell.piece) : null}: null));
 
         const from = piece.index;
+        if (!clone[from.y] || !clone[from.y][from.x]) return clone;
+        if (!clone[move.y] || !clone[move.y][move.x]) return clone;
         const movingCell = clone[from.y][from.x];
         const targetCell = clone[move.y][move.x];
         if (!movingCell || !targetCell) return clone;
 
+        // Handle en passant capture edgecase
+        if (piece.type === "pawn") {
+            const dx = move.x - from.x;
+            const dy = move.y - from.y;
+            if (Math.abs(dx) === 1 && Math.abs(dy) === 1 && !targetCell.piece) {
+                const cand1 = clone[from.y]?.[move.x];
+                const cand2 = clone[move.y]?.[from.x];
+                const candidates = [cand1, cand2];
+                for (const cand of candidates) {
+                    const epPawn = cand?.piece as Pawn | undefined;
+                    if (!epPawn || epPawn.type !== "pawn" || epPawn.getPlayer() === piece.getPlayer()) continue;
+                    for (let i = 0; i < epPawn.isEnPassantTarget.length; i++) {
+                        const sq = epPawn.enPassantSquare[i];
+                        if (epPawn.isEnPassantTarget[i] && sq && sq.x === move.x && sq.y === move.y) {
+                            cand!.piece = null;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         targetCell.piece = movingCell.piece;
-        targetCell.piece!.index = { ...move };
         movingCell.piece = null;
+        if (!targetCell.piece) {
+            return clone;
+        }
+        targetCell.piece!.index = { ...move };
+
+        for (let y = 0; y < clone.length; y++) {
+            for (let x = 0; x < clone[y].length; x++) {
+                const c = clone[y][x];
+                if (c && c.piece) {
+                    c.piece.index = { x, y };
+                }
+            }
+        }
+
         return clone;
     }
 
@@ -538,6 +659,513 @@ export default function Game({ navigation }: GameProps) {
             }
         }
         return false;
+    }
+
+    type LegalMove = {
+        piece: Pieces;
+        from: Coord;
+        to: Coord;
+        isCapture: boolean;
+    };
+
+    function getAIMoves(player: Player): LegalMove[] {
+        const legalMoves: LegalMove[] = [];
+        const localCells = board.map(row => [...row]);
+        const pieces = player.getPieces();
+
+        for (const piece of pieces) {
+            if (!piece) continue;
+            const lastPawn = getLastPawn(piece.getPlayer());
+            const lastNonPawn = getLastNonPawn(piece.getPlayer());
+            if (piece.type !== "pawn" && lastNonPawn) continue;
+            if (lastPawn && lastPawn.x === piece.index.x && lastPawn.y === piece.index.y) continue;
+            if (piece.type === "king" && (piece as King).dead) continue;
+            const moves = piece.getRawMoves(localCells);
+            const enemies = players.filter(p => p !== piece.getPlayer() && !p.isDefeat);
+            // Get the current king and see if it's in check
+            const king = piece.getPlayer().getPieces().find(p => p && p.type === "king") as King | undefined;
+            const isCurrentlyInCheck = !!king?.checked;
+            for (const move of moves) {
+                const targetCell = localCells[move.y][move.x];
+                if (!targetCell) continue;
+                // Check if this move would put own king in check
+                const simulated = simulateMove(board, piece, move);
+                const kingAfter = findKing(simulated, piece.getPlayer());
+                if (!kingAfter) continue;
+                const stillInCheck = isCellAttackable(simulated, kingAfter.index, enemies);
+                if (isCurrentlyInCheck && stillInCheck) continue;
+                if (stillInCheck) continue;
+                // Special handling for pawn moves
+                if (piece.type === "pawn") {
+                    const isForward = targetCell && !targetCell.piece;
+                    const attacks = piece.getRawAttacks(localCells);
+                    const isAttackTarget = attacks.some(a => a.x === move.x && a.y === move.y);
+                    if (!(isForward || isAttackTarget)) continue;
+                }
+                legalMoves.push({piece, from: { ...piece.index }, to: move, isCapture: !!targetCell.piece});
+            }
+        }
+        return legalMoves;
+    }
+
+    function pickAIMove(moves: LegalMove[]): LegalMove {
+        let bestScore = -1000000;
+        let best: LegalMove[] = [];
+
+        for (const m of moves) {
+            const score = evaluateAIMove(m);
+            if (score > bestScore) {
+                bestScore = score;
+                best = [m];
+            } else if (score === bestScore) {
+                best.push(m);
+            }
+        }
+        return best[Math.floor(Math.random() * best.length)];
+    }
+
+    function evaluateAIMove(move: LegalMove): number {
+        if (!move.piece) return 0;
+        let score = 0;
+
+        const piece = move.piece;
+        const pieceValue = PIECE_POINTS[piece.type];
+        const player = piece.getPlayer();
+
+        const from = move.from;
+        const to = move.to;
+
+        const targetCell = board[to.y]?.[to.x];
+        const targetPiece = targetCell?.piece;
+        const targetValue = targetPiece ? PIECE_POINTS[targetPiece.type] : 0;
+
+        const boardAfter = simulateMove(board, piece, to);
+        const enemies = players.filter(p => p !== player && !p.isDefeat);
+
+        const destCellAfter = boardAfter[to.y]?.[to.x];
+        const destPieceAfter = destCellAfter?.piece;
+        const destAttacked = isCellAttackable(boardAfter, to, enemies);
+
+        // Find defenders on the destination
+        let defenderCount = 0;
+        let strongestDefender = 0;
+        for (const ally of players) {
+            if (ally !== player) continue;
+            for (const ap of ally.getPieces()) {
+                if (!ap || ap === piece) continue;
+                const attacks = ap.getRawAttacks(boardAfter);
+                if (attacks.some(a => a.x === to.x && a.y === to.y)) {
+                    defenderCount++;
+                    const v = PIECE_POINTS[ap.type];
+                    if (v > strongestDefender) strongestDefender = v;
+                }
+            }
+        }
+        const defended = defenderCount > 0;
+
+        // Find strongest attacker on the destination
+        let strongestAttacker = 0;
+        if (destAttacked) {
+            for (const enemy of enemies) {
+                for (const ep of enemy.getPieces()) {
+                    if (!ep) continue;
+                    const attacks = ep.getRawAttacks(boardAfter);
+                    if (attacks.some(a => a.x === to.x && a.y === to.y)) {
+                        const v = PIECE_POINTS[ep.type];
+                        if (v > strongestAttacker) strongestAttacker = v;
+                    }
+                }
+            }
+        }
+
+        // Encourage pressure around enemy kings
+        if (piece.type !== "king") {
+            const liveEnemyKings = enemies
+                .map(e => findKing(board, e) as King | null)
+                .filter(k => k && !(k as King).dead) as King[];
+            if (liveEnemyKings.length > 0) {
+                let bestBefore = Infinity;
+                let bestAfter = Infinity;
+                for (const ek of liveEnemyKings) {
+                    const kx = ek.index.x;
+                    const ky = ek.index.y;
+                    const before = Math.abs(from.x - kx) + Math.abs(from.y - ky);
+                    const after = Math.abs(to.x - kx) + Math.abs(to.y - ky);
+                    if (before < bestBefore) bestBefore = before;
+                    if (after < bestAfter) bestAfter = after;
+                }
+                if (bestAfter < bestBefore) {
+                    score += Math.min(pieceValue, 5);
+                }
+            }
+        }
+
+        // Check and checkmate evaluation
+        let checkState = 0;
+        for (const enemy of enemies) {
+            const enemyKing = findKing(boardAfter, enemy);
+            if (!enemyKing) continue;
+            const givesCheck = isCellAttackable(boardAfter, enemyKing.index, [player]);
+            if (!givesCheck) continue;
+            checkState = Math.max(checkState, 1);
+            let enemyHasEscape = false;
+            const enemyPieces = enemy.getPieces();
+            for (const eP of enemyPieces) {
+                if (!eP || (eP.type === "king" && (eP as King).dead)) continue;
+                const moves = eP.getRawMoves(boardAfter);
+                for (const m of moves) {
+                    const simulated = simulateMove(boardAfter, eP, m);
+                    const kingAfter = findKing(simulated, enemy);
+                    if (!kingAfter) continue;
+                    const stillInCheck = isCellAttackable(simulated, kingAfter.index, [player]);
+                    if (!stillInCheck) {
+                        enemyHasEscape = true;
+                        break;
+                    }
+                }
+                if (enemyHasEscape) break;
+            }
+            if (!enemyHasEscape) {
+                checkState = 2;
+                break;
+            }
+        }
+        if (checkState === 1) score += 8;
+        if (checkState === 2) score += 1000;
+
+        // Avoid moves that put own king in danger
+        const ownKing = findKing(boardAfter, player);
+        if (ownKing && isCellAttackable(boardAfter, ownKing.index, enemies)) {
+            return -1000000;
+        }
+
+        // King of the hill win-condition
+        if (piece.type === "king") {
+            const hill = [
+                {x: 8, y: 8}, {x: 9, y: 8},
+                {x: 8, y: 9}, {x: 9, y: 9},
+            ];
+            const from = move.from;
+            const to = move.to;
+            let fromDist = 100;
+            let toDist = 100;
+            for (const h of hill) {
+                fromDist = Math.min(fromDist, Math.abs(from.x - h.x) + Math.abs(from.y - h.y));
+                toDist   = Math.min(toDist,   Math.abs(to.x   - h.x) + Math.abs(to.y   - h.y));
+            }
+            if (toDist < fromDist) score += 10;
+        }
+
+        // Central control bonus
+        const inCenter =
+        move.to.x >= 5 && move.to.x <= 12 &&
+        move.to.y >= 5 && move.to.y <= 12;
+        if (inCenter) {
+            if (piece.type === "pawn") {
+                score += 1;
+            } else {
+                score += 6;
+            }
+        } else if (piece.type !== "pawn") {
+            score += 1;
+        }
+
+        // En passant capture bonus
+        if (piece.type === "pawn" && !targetPiece) {
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            if (Math.abs(dx) === 1 && Math.abs(dy) === 1) {
+                const cand1 = board[from.y]?.[to.x];
+                const cand2 = board[to.y]?.[from.x];
+                const candidates = [cand1, cand2];
+                let epValue = 0;
+                for (const cand of candidates) {
+                    const epPawn = cand?.piece as Pawn | undefined;
+                    if (!epPawn || epPawn.type !== "pawn" || epPawn.getPlayer() === player) continue;
+                    for (let i = 0; i < epPawn.isEnPassantTarget.length; i++) {
+                        const sq = epPawn.enPassantSquare[i];
+                        if (epPawn.isEnPassantTarget[i] && sq && sq.x === to.x && sq.y === to.y) {
+                            epValue = PIECE_POINTS["pawn"];
+                            break;
+                        }
+                    }
+                    if (epValue > 0) break;
+                }
+                score += epValue;
+            }
+        }
+
+        // Risk assessment
+        if (destAttacked) {
+            if (defended) {
+                if (move.isCapture && targetValue) {
+                    if (targetValue > pieceValue) {
+                        score += (targetValue - pieceValue);
+                    } else if (targetValue === pieceValue) {
+                        score += 2;
+                    } else {
+                        score -= Math.floor((pieceValue - targetValue) * 0.5);
+                    }
+                } else {
+                    score -= Math.floor(pieceValue * 0.2);
+                }
+            } else {
+                if (move.isCapture && targetValue) {
+                    if (targetValue > pieceValue) {
+                        score += Math.floor((targetValue - pieceValue) * 0.5);
+                    } else if (targetValue === pieceValue) {
+                        score += 1;
+                    } else {
+                        score -= (pieceValue - targetValue) * 2;
+                    }
+                } else {
+                    score -= pieceValue * 2;
+                }
+            }
+        } else {
+            if (move.isCapture && targetValue) {
+                score += targetValue;
+            }
+        }
+
+        // Pawn promotion bonus
+        if (piece.type === "pawn") {
+            const [fx, fy] = PAWN_FORWARD[player.id];
+            let pathBlockedByOwnPawn = false;
+            for (let step = 1; step <= 4; step++) {
+                const ny = to.y + fy * step;
+                const nx = to.x + fx * step;
+                const cell = boardAfter[ny]?.[nx];
+                if (!cell) break;
+                if (!cell.piece) continue;
+                if (cell.piece.getPlayer() === player && cell.piece.type === "pawn") {
+                    pathBlockedByOwnPawn = true;
+                    break;
+                } else {
+                    break;
+                }
+            }
+            const backlineHit =
+                (player.id === 1 && to.y <= 0) ||
+                (player.id === 2 && to.x >= 17) ||
+                (player.id === 3 && to.y >= 17) ||
+                (player.id === 4 && to.x <= 0);
+            const sideHit =
+                (player.id === 1 && to.y === 5 && (to.x < 5 || to.x > 12)) ||
+                (player.id === 2 && to.x === 12 && (to.y < 5 || to.y > 12)) ||
+                (player.id === 3 && to.y === 12 && (to.x < 5 || to.x > 12)) ||
+                (player.id === 4 && to.x === 5 && (to.y < 5 || to.y > 12));
+            if (backlineHit) {
+                score += pathBlockedByOwnPawn ? Math.floor(PIECE_POINTS["queen"] * 0.4) : PIECE_POINTS["queen"];
+            } else if (sideHit) {
+                score += pathBlockedByOwnPawn ? Math.floor(PIECE_POINTS["prince"] * 0.4) : PIECE_POINTS["prince"];
+            }
+        }
+
+        // Pawn structure bonus
+        if (piece.type === "pawn") {
+            let neighborBefore = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const ny = from.y + dy;
+                    const nx = from.x + dx;
+                    const cell = board[ny]?.[nx];
+                    const p = cell?.piece;
+                    if (p && p.type === "pawn" && p.getPlayer() === player) {
+                        neighborBefore++;
+                    }
+                }
+            }
+            let neighborAfter = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const ny = to.y + dy;
+                    const nx = to.x + dx;
+                    const cell = boardAfter[ny]?.[nx];
+                    const p = cell?.piece;
+                    if (p && p.type === "pawn" && p.getPlayer() === player) {
+                        neighborAfter++;
+                    }
+                }
+            }
+            if (!move.isCapture && neighborBefore >= 2 && neighborAfter < neighborBefore) {
+                score -= 3;
+            }
+            if (neighborAfter === 0) {
+                score -= 1;
+            } else if (neighborAfter <= 2) {
+                score += neighborAfter * 2;
+            } else {
+                score += 1;
+            }
+            const ownPawns = player.getPieces().filter(p => p && p.type === "pawn").length;
+            if (ownPawns >= 5) {
+                let pawnDepth = 0;
+                if (player.id === 1) pawnDepth = 17 - to.y;
+                if (player.id === 3) pawnDepth = to.y;
+                if (player.id === 2) pawnDepth = to.x;
+                if (player.id === 4) pawnDepth = 17 - to.x;
+                if (pawnDepth >= 4 && neighborAfter === 0) {
+                    const overextendPenalty = Math.min(pawnDepth, 5);
+                    score -= overextendPenalty;
+                }
+            }
+        }
+
+        // Penalize moves that reduce king mobility
+        if (piece.type !== "king") {
+            const kingBefore = findKing(board, player);
+            const kingAfter  = findKing(boardAfter, player);
+            if (kingBefore && kingAfter) {
+                const beforeMoves = kingBefore.getRawMoves(board);
+                const afterMoves  = kingAfter.getRawMoves(boardAfter);
+                if (afterMoves.length < beforeMoves.length) {
+                    score -= 2;
+                }
+            }
+        }
+
+        // Castling bonus
+        if (piece.type === "king") {
+            const dx = Math.abs(move.to.x - move.from.x);
+            const dy = Math.abs(move.to.y - move.from.y);
+            if (dx === 2 || dy === 2) {
+                score += 40;
+            }
+        }
+
+        // Encourage moving non-pawn, non-king pieces out of home area
+        if (piece.type !== "pawn" && piece.type !== "king") {
+            let leftHome = false;
+            switch (player.id) {
+                case 1:
+                    if (from.y >= 14 && to.y < 14) leftHome = true;
+                    break;
+                case 2:
+                    if (from.x <= 3 && to.x > 3) leftHome = true;
+                    break;
+                case 3:
+                    if (from.y <= 3 && to.y > 3) leftHome = true;
+                    break;
+                case 4:
+                    if (from.x >= 14 && to.x < 14) leftHome = true;
+                    break;
+            }
+            if (leftHome) score += 20;
+        }
+
+        // Two king capture win-condition
+        if (targetPiece?.type === "king" && (targetPiece as King).dead) {
+            score += 100000;
+        }
+
+
+        // Encourage adding more defenders around moved pieces
+        score += defenderCount;
+
+        // Encourage increasing influence with non-pawn, non-king pieces on truly safe squares
+        if (piece.type !== "pawn" && piece.type !== "king" && destPieceAfter) {
+            const safeSquare = !destAttacked || strongestDefender >= strongestAttacker;
+            if (!safeSquare) return score;
+            const attacksAfter = destPieceAfter.getRawAttacks(boardAfter);
+            let influence = 0;
+            for (const a of attacksAfter) {
+                const tCell = boardAfter[a.y]?.[a.x];
+                if (!tCell) continue;
+                const tp = tCell.piece;
+                if (!tp) {
+                    influence += 0.25;
+                } else if (enemies.includes(tp.getPlayer())) {
+                    influence += Math.min(PIECE_POINTS[tp.type], 3);
+                }
+            }
+            score += influence;
+        }
+
+        // Retreat bonus for saving high value pieces
+        if (piece.type !== "pawn" && piece.type !== "king") {
+            const fromAttacked = isCellAttackable(board, from, enemies);
+            const destSafeOrBetter =
+                !destAttacked || strongestDefender >= strongestAttacker;
+            if (fromAttacked && destSafeOrBetter && pieceValue >= PIECE_POINTS["rook"]) {
+                const retreatGain = Math.min(pieceValue, 6);
+                score += retreatGain;
+            }
+        }
+
+        // King of the hill defense
+        const hillSquares = [
+            { x: 8, y: 8 }, { x: 9, y: 8 },
+            { x: 8, y: 9 }, { x: 9, y: 9 },
+        ];
+        let minEnemyHillDist = 10000;
+        for (const enemy of enemies) {
+            const enemyKing = findKing(board, enemy) as King | null;
+            if (!enemyKing || (enemyKing as King).dead) continue;
+
+            let kDist = 10000;
+            for (const h of hillSquares) {
+                const d = Math.abs(enemyKing.index.x - h.x) + Math.abs(enemyKing.index.y - h.y);
+                if (d < kDist) kDist = d;
+            }
+            if (kDist < minEnemyHillDist) minEnemyHillDist = kDist;
+        }
+        if (minEnemyHillDist < 10000 && piece.type !== "king") {
+            const safeSquare = !destAttacked || strongestDefender >= strongestAttacker;
+            if (safeSquare) {
+                let fromHillDist = 10000;
+                let toHillDist = 10000;
+                for (const h of hillSquares) {
+                    const dFrom = Math.abs(from.x - h.x) + Math.abs(from.y - h.y);
+                    const dTo   = Math.abs(to.x   - h.x) + Math.abs(to.y   - h.y);
+                    if (dFrom < fromHillDist) fromHillDist = dFrom;
+                    if (dTo   < toHillDist)   toHillDist   = dTo;
+                }
+                const urgency = Math.max(0, 7 - minEnemyHillDist);
+                if (toHillDist < fromHillDist) {
+                    score += urgency * 3;
+                }
+                if (hillSquares.some(h => h.x === to.x && h.y === to.y)) {
+                    score += urgency * 8;
+                }
+                if (destPieceAfter) {
+                    const attacksAfter = destPieceAfter.getRawAttacks(boardAfter);
+                    const attacksHill = attacksAfter.some(a =>
+                        hillSquares.some(h => h.x === a.x && h.y === a.y)
+                    );
+                    if (attacksHill) {
+                        score += urgency * 4;
+                    }
+                }
+            }
+        }
+
+        // Encourage increasing mobility with long-range pieces on safe squares
+        if (destPieceAfter && (piece.type === "rook" || piece.type === "bishop" || piece.type === "prince" || piece.type === "princess")) {
+            const safeSquare = !destAttacked || strongestDefender >= strongestAttacker;
+            if (safeSquare) {
+                score += PIECE_POINTS[piece.type] * 0.5;
+            }
+        }
+
+        // Extra discouragement of queen moves to unsafe squares
+        if (piece.type === "queen") {
+            const unsafeSquare = destAttacked && strongestDefender < strongestAttacker;
+            const badOrNoTrade = !move.isCapture || targetValue <= pieceValue;
+
+            if (unsafeSquare && badOrNoTrade) {
+                score -= 50;
+            }
+        }
+
+        // Slightly discourage pointless pawn moves
+        if (piece.type === "pawn" && !move.isCapture) {
+            score -= 1;
+        }
+
+        return score;
     }
 
     const hookStyles = useMemo(() => StyleSheet.create({
