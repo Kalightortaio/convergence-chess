@@ -1,5 +1,5 @@
 import { PIECE_POINTS, TURN_LIMIT } from "../Constants";
-import { CornerPosition } from "../Types";
+import { Coord, CornerPosition } from "../Types";
 import { Piece, PieceType } from "./pieces/Piece";
 
 export class Player { //abstract later
@@ -21,6 +21,8 @@ export class Player { //abstract later
     timeRemaining: number = TURN_LIMIT;
     moveCount: number = 0;
     isCPU: boolean;
+    lastTurnMoves: { from: Coord; to: Coord }[] = [];
+    currentTurnMoves: { from: Coord; to: Coord }[] = [];
 
     constructor(id: number, name: string, title: string, rightColor: string, leftColor: string, photo: ({ uri: string } | number), position: CornerPosition, isCPU: boolean = false) {
         this.id = id;

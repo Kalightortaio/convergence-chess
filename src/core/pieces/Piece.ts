@@ -9,6 +9,9 @@ export abstract class Piece {
     abstract type: PieceType;
     abstract note: string;
     onlyChoice: boolean = false;
+    pieceMoveCounter: number = 0;
+    pieceStreak: number = 0;
+    lastTurnMoved: number = -1;
 
     constructor(index: { x: number; y: number }, player: Player) {
         this.index = index;
@@ -27,6 +30,16 @@ export abstract class Piece {
             const target = board[coord.y]?.[coord.x];
             return !!target?.piece && target.piece.player !== this.player;
         });
+    }
+
+    registerMove(turnNumber: number) {
+        if (this.lastTurnMoved === turnNumber - 1) {
+            this.pieceStreak += 1;
+        } else if (this.lastTurnMoved !== turnNumber) {
+            this.pieceStreak = 1;
+        }
+        this.lastTurnMoved = turnNumber;
+        this.pieceMoveCounter += 1;
     }
 
     protected collectMoves(board: Cells[][], dx: number, dy: number, maxStep: number = board.length, isPawn: boolean = false): Coord[] {
